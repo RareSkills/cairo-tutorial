@@ -165,7 +165,7 @@ Cairo contracts have the following capabilities and/or differences compared to S
 - Like Rust, Cairo is not object-oriented and therefore does not support inheritance. However, Cairo provides other ways to compose code together
 - Solidity contracts upgrade through proxy patterns; however, Cairo contracts can upgrade their bytecode while keeping the storage intact
 - There is no “native token” in Cairo and hence no `msg.value`. By default, gas is paid using the STRK token, which is an ERC-20 token. You can see the token on the [explorer here](https://voyager.online/contract/0x04718f5a0Fc34cC1AF16A1cdee98fFB20C31f5cD61D6Ab07201858f4287c938D).
-- Starknet has account abstraction built into the protocol, so there is no such thing as an “Exaternally Owned Address (EOA)”
+- Starknet has account abstraction built into the protocol, so there is no such thing as an "Externally Owned Address (EOA)”
 
 The last point may cause some confusion for developers coming from EVM compatible chains, but don’t worry, we will explore this in great detail later.
 
@@ -173,11 +173,11 @@ The last point may cause some confusion for developers coming from EVM compatibl
 
 To understand the lifecycle of account creation on Starknet, you can create a wallet using [Ready](https://www.ready.co/) (formerly Argent) or [Braavos](https://braavos.app/download-braavos-wallet/) wallet. The video below shows the process of creating a Ready wallet using the browser extension.
 
-<video src="Cairo%20for%20Solidity%20Developers%20%F0%9F%90%BA%F0%9F%84%B4/143145.mp4" type="video/mp4" autoplay loop muted controls></video>
+<video src="https://r2media.rareskills.io/CairoInstall/video1.mp4" type="video/mp4" autoplay loop muted controls></video>
 
 After installing the wallet, note that it defaults to mainnet. For this tutorial, switch to Sepolia testnet by clicking the network selector at the top of your Ready wallet and choosing "Sepolia". Then create a new account on Sepolia following the process shown in the video below:
 
-<video src="Cairo%20for%20Solidity%20Developers%20%F0%9F%90%BA%F0%9F%84%B4/Create33.mp4" type="video/mp4" autoplay loop muted controls></video>
+<video src="https://r2media.rareskills.io/CairoInstall/video2.mp4" type="video/mp4" autoplay loop muted controls></video>
 
 Next, copy your wallet address and paste it into a Starknet block explorer. You can use either [Starkscan](https://starkscan.co/) or [Voyager](https://voyager.online/). Make sure to switch the explorer to Sepolia testnet as well (at the top right of the page).
 
@@ -191,7 +191,7 @@ To start transacting, we need STRK tokens to cover gas fees. Go to the [Starknet
 
 A Starknet account is initialized by sending its first transaction. Let’s send 1 STRK to ourselves from the wallet:
 
-<video src="Cairo%20for%20Solidity%20Developers%20%F0%9F%90%BA%F0%9F%84%B4/Create334.mp4" type="video/mp4" autoplay loop muted controls></video>
+<video src="https://r2media.rareskills.io/CairoInstall/video3.mp4" type="video/mp4" autoplay loop muted controls></video>
 
 Now, paste your address into the explorer search again. You'll see a contract has been deployed at your wallet address. This first transaction automatically deployed your account contract, as shown in the image below:
 
