@@ -210,7 +210,7 @@ Now that we have seen how variables are declared in Cairo, let us explore the ma
 
 In Cairo, the most fundamental data type is a field element denoted by `felt252`. It is the default numeric type in the language, and represents an element of the prime field used by the Cairo VM. This field is shown below:
 
-                                                                   $p = 2^{251} + 17*2^{192} + 1$
+$p = 2^{251} + 17*2^{192} + 1$
 
 This means a `felt252` value can range from `0` up to `p - 1`. All arithmetic performed on `felt252` values is modular arithmetic over this field. When a result exceeds p−1, it wraps back to 0, similar to how hours wrap around on a clock.
 
@@ -264,10 +264,9 @@ Field elements in Cairo's `felt252` type operate under finite field arithmetic p
 
 If a = 1, and b=2, we would have `1 × 2⁻¹`.
 
-                                     Since,   $2 × (P+1)/2 = P+1 ≡ 1 \pmod P$.
+Since, $2 × (P+1)/2 = P+1 ≡ 1 \pmod P$.
 
-
-                                     $1 ÷ 2 ≡ (P + 1)/2 \pmod P$.
+$1 ÷ 2 ≡ (P + 1)/2 \pmod P$.
 
 In the code block below, we will show how the proof above is true and see the behavior of `felt252` division with or without remainder.
 
@@ -303,7 +302,7 @@ As seen in the test above, division in the Cairo field works similarly to intege
 
 However, it is different when the divisions have remainder(s).  For example, if we divide 4 by 3, we aren’t asking “how many times does three go into four,” but rather, “what value multiplied by three gives four in this field?”
 
-                                                           $n\cdot 3 \equiv 4 \pmod p$
+$n\cdot 3 \equiv 4 \pmod p$
 
 In field arithmetic, the answer is the product of four and the modular inverse of three. This ensures that the result, when multiplied by three, yields four modulo the field’s prime.
 
@@ -357,7 +356,7 @@ let value: u256 = 7;
 
 Signed integers in Cairo are written using a lowercase `i` followed by the bit width, such as `i8`, `i16`, `i32`, `i64`, or `i128`. Each signed type can represent values within a range centered around zero, calculated using the formula:
 
-                                                    $Range=−2 ^{n−1}$    to    $2^{n−1} −1$
+$Range=−2 ^{n−1}$ to $2^{n−1} −1$
 
 For example, the range for `i8` is `-128..127`.
 
