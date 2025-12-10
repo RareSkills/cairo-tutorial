@@ -47,7 +47,7 @@ In the Cairo code above, we define two event structs (`UserRegistered` and `User
 
 These separate structs are then unified (listed) under a single `Event` enum, where each variant references its corresponding struct. When events are emitted, the enum variant names (`NewUser`, `UserLogin`) serve as the searchable event identifiers.
 
-Although you'll typically see the same name used for **both the enum variant (**like **`NewUser`)** and ****its **associated struct (like `UserRegistered`)**, they don't have to match**.** A different name is used here to highlight the distinction.
+Although you'll typically see the same name used for **both the enum variant (like `NewUser`) and its associated struct (like `UserRegistered`), they don't have to match**. A different name is used here to highlight the distinction.
 
 Starknet SDKs, like Starknet.js, can filter and query events using these identifiers. For example, to find all user registrations, you would query for events named `"NewUser"`.
 
@@ -92,19 +92,20 @@ The placement of `#[key]` depends on which specific field you want to make searc
 
 In `UserRegistered`, we're indexing `user_id` for filtering by user, while in `UserLoggedIn`, we're indexing `timestamp` for filtering by time.
 
-You should only add `#[key]` to fields you'll actually query or filter by, each field MUST be annotated individually based on your specific filtering needs.
+You should only add `#[key]` to fields you'll actually query or filter by, each field **must** be annotated individually based on your specific filtering needs.
 
 Key fields are stored separately from regular data fields in the transaction receipts to enable Starknet SDKs to quickly filter events without processing all event data.
 
 ## Events Data Structure in Transaction Receipts
 
-A transaction receipt is a record that contains detailed information about a completed transaction. It includes block details (`block_hash`, `block_number`), transaction hash, execution status (`execution_status`, `finality_status`), gas consumption (`execution_resources`), transaction fees (`actual_fee`), etc., and any events that were emitted during execution.
+A transaction receipt is a record that contains detailed information about a 
+successful transaction. It includes block details (`block_hash`, `block_number`), transaction hash, execution status (`execution_status`, `finality_status`), gas consumption (`execution_resources`), transaction fees (`actual_fee`), etc., and any events that were emitted during execution.
 
 Each transaction receipt contains an `events` array with keys and data for all emitted events where:
 
-- `data` - represent an array containing serialized non-indexed field values
-- `from_address` - is the contract address that emitted the event
-- `keys` - is an array that **ALWAYS** contains the event selector hash at `keys[0]`, plus any indexed field values at `keys[1]`, `keys[2]`, etc.
+- `data`: represent an array containing serialized non-indexed field values
+- `from_address`: is the contract address that emitted the event
+- `keys`: is an array that **always** contains the event selector hash at `keys[0]`, plus any indexed field values at `keys[1]`, `keys[2]`, etc.
 
 *The `keys` array is present in every event, regardless of whether you use `#[key]` annotations in your contract. At minimum, it contains the event selector hash that identifies the event type (i.e Transfer, e.t.c).*
 
@@ -148,7 +149,7 @@ async function getTxnReceipt() {
 getTxnReceipt();
 ```
 
-*This example only shows how events appear in transaction receipts. Different querying techniques with Starknet.js are covered in the later section of the article.*
+*This example only shows how events appear in transaction receipts. Different querying techniques with `Starknet.js` are covered in the later section of the article.*
 
 ### Understanding the Keys Array
 
@@ -156,7 +157,7 @@ In the transaction receipt above, the event has only one key (`keys[0]`) contain
 
 ![Screenshot 2025-09-02 at 11.16.37.png](https://r2media.rareskills.io/StarknetEvents/image12.png)
 
-This event selector hash (`keys[0]`) represents a `Transfer` event with **no indexed** parameters**,** with ****all its non-indexed fields stored in the `data` array:
+This event selector hash (`keys[0]`) represents a `Transfer` event with **no indexed** parameters, with all its non-indexed fields stored in the `data` array:
 
 ![Screenshot 2025-09-02 at 11.20.43.png](https://r2media.rareskills.io/StarknetEvents/image13.png)
 
@@ -173,8 +174,8 @@ In Solidity, event data is structured using topics and data as seen in this [exa
 ![A Solidity event with topics and data fields highlighted](https://r2media.rareskills.io/StarknetEvents/image7.png)
 
 - **topic0**: **Always** contains the event signature hash. In the above example, the event `NewUser(uint32,string)` has the hash `keccak256("NewUser(uint32,string)")`, which equals `0x37ecc4388271ab7af2220881c1f2f70fbea71e6b1635107f9daffa0fab84d5b3`.
-- **topic1**: Contains the indexed `user_id` parameter
-- **Data field**: Contains all non-indexed parameters (in Hex)
+- **topic1**: Contains the indexed `user_id` parameter.
+- **Data field**: Contains all non-indexed parameters (in Hex).
 
 Cairo follows a similar pattern with the keys array. For comparison, view this [transaction](https://sepolia.voyager.online/event/1002359_7_9) on Starknet Sepolia that shows an event with multiple keys:
 
@@ -184,7 +185,7 @@ Cairo follows a similar pattern with the keys array. For comparison, view this [
 - Subsequent elements in the array (e.g., `keys[1]`, `keys[2]`, …`keys[10]`), shown with the green arrow, represent the indexed (`#[key]`) fields of the event.
 - Non-indexed parameters are stored separately in the `data` field, as illustrated in the purple box.
 
-Based on the image above, the KEYS section contains a total of ten (10) indexed parameters. This highlights a key advantage of Cairo over Solidity: while Solidity caps indexed parameters at three (topic1-topic3), with topic0 always reserved for the event signature, Cairo allows up to fifty (50) indexed parameters. This eliminates the need for workarounds like anonymous events in Solidity (which can have up to 4 indexed parameters but lose the event signature).
+Based on the image above, the `KEYS` section contains a total of ten (10) indexed parameters. This highlights a key advantage of Cairo over Solidity: while Solidity caps indexed parameters at three (`topic1-topic3`), with `topic0` always reserved for the event signature, Cairo allows up to fifty (50) indexed parameters. This eliminates the need for workarounds like anonymous events in Solidity (which can have up to 4 indexed parameters but lose the event signature).
 
 As in Solidity, non-indexed fields in Cairo require manual searching through the `data` array, while indexed fields (marked with `#[key]`) can be efficiently filtered using Starknet SDKs.
 
@@ -220,16 +221,16 @@ The `Serde` trait converts complex Cairo types into a sequence of `felt252` valu
 
 *As covered in earlier chapters, `ByteArray` is a Cairo type that represents strings. It's a struct with three fields:*
 
-- `*data: Array<felt252>`: contains 31-byte chunks of the string data*
-- `*pending_word: felt252`:  remaining bytes after filling the `data` array with complete 31-byte chunks (up to 30 bytes)
-- `*pending_word_len: u32`: number of bytes in `pending_word`
+- `data: Array<felt252>`: contains 31-byte chunks of the string data*
+- `pending_word: felt252`:  remaining bytes after filling the `data` array with complete 31-byte chunks (up to 30 bytes)
+- `pending_word_len: u32`: number of bytes in `pending_word`
 
 
 *Cairo first packs complete 31-byte chunks into the `data` array, then puts any leftover bytes into `pending_word`. For example, "serah" gets serialized as:*
 
-- `*data`: `[]` (empty array - no 31-byte chunks needed for a 5-byte string)*
-- `*pending_word`: `0x7365726168` (contains the actual string bytes in hex format)*
-- `*pending_word_len`: `0x5` ( 5 bytes total)*
+- `data`: `[]` (empty array - no 31-byte chunks needed for a 5-byte string)
+- `pending_word`: `0x7365726168` (contains the actual string bytes in hex format)
+- `pending_word_len`: `0x5` ( 5 bytes total)
 
 *Since `ByteArray` is commonly used and part of Cairo's standard library, the `Event` trait includes automatic serialization support for it.*
 
@@ -241,7 +242,7 @@ The `Serde` trait converts complex Cairo types into a sequence of `felt252` valu
 - Arrays: `Array<u32>`, `Array<ByteArray>`, etc.
 - User-defined enums with data
 
-When an event contains fields of these complex types, **those field types** must derive `Serde` so the `Event` trait can serialize them during emission. Without this, the compiler cannot process the events correctly. A practical example of this will be shown in the *“Handling Complex Event Field Types”* section of the article.
+When an event contains fields of these complex types, **those field types** must derive `Serde` so the `Event` trait can serialize them during emission. Without this, the compiler cannot process the events correctly. A practical example of this will be shown in the ***“Handling Complex Event Field Types”*** section of the article.
 
 ## `EventEmitter` Trait
 
@@ -289,7 +290,7 @@ Without `Serde` in the `UserMetadata` struct, the code fails to compile, as show
 
 ![Screenshot 2025-07-16 at 17.28.06.png](https://r2media.rareskills.io/StarknetEvents/image11.png)
 
-`*UserMetadata` needs `Serde` because it's a custom struct. The `UserRegistered` event struct only needs `starknet::Event` - the Event trait handles basic types automatically but delegates to `Serde` for complex field types.*
+*`UserMetadata` needs `Serde` because it's a custom struct. The `UserRegistered` event struct only needs `starknet::Event` (the Event trait handles basic types automatically but delegates to `Serde` for complex field types.)*
 
 Also, note that complex type indexed fields (`#[key]`) are stored as hashed values in the event's `keys` array and cannot be directly recovered from transaction logs.
 
@@ -301,11 +302,11 @@ This design uses `user_id` (a `u32` primitive type) as the indexed field, which 
 #[derive(Drop, starknet::Event)]
 pub struct UserRegistered {
     #[key]
-    pub user_id: u32,           // Primitive type - stays readable
-    pub username: ByteArray,    // Non-indexed - in data array
-    pub metadata: UserMetadata, // Non-indexed - in data array
-    pub tag_count: u32,         // Non-indexed - in data array
-    pub timestamp: u64,         // Non-indexed - in data array
+    pub user_id: u32,           // Primitive type (stays readable)
+    pub username: ByteArray,    // Non-indexed (in data array)
+    pub metadata: UserMetadata, // Non-indexed (in data array)
+    pub tag_count: u32,         // Non-indexed (in data array)
+    pub timestamp: u64,         // Non-indexed (in data array)
 }
 ```
 
@@ -314,7 +315,7 @@ pub struct UserRegistered {
 ```json
 {
   "keys": [
-    "0x...event_selector",    // *key[0] is always the event selector.*
+    "0x...event_selector",    // key[0] is always the event selector.
     "0x7b"                    // user_id = 123 (readable as hex)
   ],
   "data": [
@@ -371,17 +372,17 @@ When used on an event variant in the **`Event`** enum, it changes the event sele
 To understand how `#[flat]` works, we need to distinguish between these three levels of enum structure:
 
 ```rust
-*// OUTER enum - the main Event enum*
+// OUTER enum (the main Event enum)
 pub enum Event {
     UserRegistered: UserRegistered,
     #[flat]
-    UserDataUpdated: UserDataUpdated,  *// <- This references the INNER enum*
+    UserDataUpdated: UserDataUpdated,  // <- This references the INNER enum
 }
 
-*// INNER enum - nested inside the outer enum structure*
+// INNER enum (nested inside the outer enum structure)
 pub enum UserDataUpdated {
-    DeviceType: UpdatedDeviceType,     *// <- These are the inner variants*
-    IpRegion: UpdatedIpRegion,         *// <- These are the inner variants*
+    DeviceType: UpdatedDeviceType,     // <- These are the inner variants
+    IpRegion: UpdatedIpRegion,         // <- These are the inner variants
 }
 ```
 
@@ -399,7 +400,7 @@ The following example shows a contract with multiple event types: a simple struc
 #[derive(Drop, starknet::Event)]
 pub enum Event {
     UserRegistered: UserRegistered,
-    #[flat]                              // NEWLY ADDED - flattens nested event enum
+    #[flat]                              // NEWLY ADDED (flattens nested event enum)
     UserDataUpdated: UserDataUpdated,
 }
 
@@ -451,13 +452,13 @@ Without the `#[flat]` attribute, the event selector hash is derived from the out
 
 ```json
 {
-  "keys": ["0x...hash_of_UserDataUpdated"],  *// Same selector for all variants*
+  "keys": ["0x...hash_of_UserDataUpdated"],  // Same selector for all variants*
   "data": [...],
   "from_address": "0x..."
 }
 ```
 
-But when we use  ****`#[flat]`, the event selector hash is computed from the inner variant name: `starknetKeccak("DeviceType")` / `starknetKeccak("IpRegion")`, so `DeviceType` and `IpRegion` each get their own selector hash for precise filtering and querying.
+But when we use `#[flat]`, the event selector hash is computed from the inner variant name: `starknetKeccak("DeviceType")` / `starknetKeccak("IpRegion")`, so `DeviceType` and `IpRegion` each get their own selector hash for precise filtering and querying.
 
 ```json
 // DeviceType event
@@ -477,15 +478,15 @@ But when we use  ****`#[flat]`, the event selector hash is computed from the inn
 
 The `#[flat]` attribute only affects event naming and selector computation, the actual data structure, fields, and serialization remain unchanged. This makes event filtering and log inspection much easier when working with nested event enums.
 
-`*#[flat]` attribute is commonly used in OpenZeppelin component libraries to avoid event selector collisions when integrating multiple components into a single contract.*
+*`#[flat]` attribute is commonly used in OpenZeppelin component libraries to ensure component events match the standard event structure*
 
-*For example, when using both ERC20 and Ownable components, `#[flat]` ensures each component's events maintain their different identifiers. (Components are explained in detail in Chapter- for now, think of them as reusable contract modules.)*
+*For example, when using ERC20 and Ownable components, `#[flat]` removes the component ID prefix from events, so ERC20's `Transfer` and `Approval` events, along with Ownable's `OwnershipTransferred` event, appear with their own selector hash as the first key, just like they would in standalone contracts. (Components are explained in detail in Chapter 13 - for now, think of them as reusable contract modules.)*
 
-Note that structs used as enum variants in event enums must derive `starknet::Event`because they become event types themselves when used in the enum structure.
+Note that structs used as enum variants in event enums must derive `starknet::Event` because they become event types themselves when used in the enum structure.
 
 ## Testing Event Logs
 
-Scaffold a new Scarb project `scarb new testinglog`and select ‘Starknet Foundry (default)’ as your test runner:
+Scaffold a new Scarb project `scarb new testinglog` and select ‘Starknet Foundry (default)’ as your test runner:
 
 ![Initializing a Starknet Foundry project](https://r2media.rareskills.io/StarknetEvents/image4.png)
 
@@ -503,14 +504,14 @@ pub trait IUserManager<TContractState> {
     fn get_user_count(self: @TContractState) -> u32;
 }
 
-// Struct to store user information - derives Store to enable storage in contract
+// Struct to store user information (derives Store to enable storage in contract)
 #[derive(Drop, Serde, starknet::Store)]
 pub struct UserMetadata {
     pub user_id: u32,
     pub username: ByteArray
 }
 
-// Event emitted when a new user registers - user_id is marked as key for indexing
+// Event emitted when a new user registers (user_id is marked as key for indexing)
 #[derive(Drop, starknet::Event)]
 pub struct UserRegistered {
     #[key]
@@ -614,13 +615,12 @@ fn deploy_contract(name: ByteArray) -> ContractAddress {
 
 #[test]
 fn test_registration_event_emission() {
-    // Declare and deploy the UserManager contract
-    let contract = declare("UserManager").unwrap().contract_class();
-    let (contract_address, _) = contract.deploy(@array![]).unwrap();
-
+    // Deploy the UserManager contract
+    let contract_address = deploy_contract("UserManager");
+    
     // Create a dispatcher to interact with the deployed contract
     let dispatcher = IUserManagerDispatcher { contract_address };
-
+    
     // Start spying on events before the function call
     let mut spy = spy_events();
 
@@ -667,12 +667,9 @@ From `starknet` core, we import `ContractAddress` for handling contract addresse
 use starknet::{ContractAddress, get_block_timestamp};
 ```
 
- ****
-
 `test_registration_event_emission()` uses the simplified approach with `spy.assert_emitted()`
 
-- `declare()` loads the "UserManager" contract class
-- `deploy()` creates a new instance of the contract with `@array![]` that represents empty constructor arguments since our contract doesn't need any
+- `deploy_contract("UserManager")` is a helper function that declares and deploys the `UserManager` contract, returning its address
 - `IUserManagerDispatcher { contract_address }` creates a dispatcher to interact with the deployed contract
 - `spy_events()` initializes event spying before we trigger the action
 
@@ -682,16 +679,15 @@ Run `scarb test` you should see the test pass, confirming that our event testing
 
 ### Test 2: Using manual method
 
-`test_event_structure()` tests to ensure that the `register_user` function works correctly and emits the expected `UserRegistered`event.
+`test_event_structure()` tests to ensure that the `register_user` function works correctly and emits the expected `UserRegistered` event.
 
 ```rust
 #[test]
 fn test_event_structure() {
-    // Declare and deploy the UserManager contract for testing
-    let contract = declare("UserManager").unwrap().contract_class();
-    let (contract_address, _) = contract.deploy(@array![]).unwrap();
-
-    // Create dispatcher to interact with the contract
+    // Deploy the UserManager contract
+    let contract_address = deploy_contract("UserManager");
+    
+    // Create a dispatcher to interact with the deployed contract
     let dispatcher = IUserManagerDispatcher { contract_address };
 
     // Start event spy to capture all emitted events
@@ -780,7 +776,7 @@ cd starknet-event-parsing
 ```
 
 - If you don't have yarn installed, install it first using `npm install -g yarn`
-- Run `yarn install` to install dependencies, then install dotenv `yarn add dotenv`
+- Run `yarn install` to install dependencies, then install dotenv using `yarn add dotenv`
 - Create a `.env` file in the root directory:
 
 ```rust
@@ -880,13 +876,13 @@ async function listenToTransfers() {
 listenToTransfers();
 ```
 
-When you run `yarn dev`, you will see new transactions at intervals in your terminal output until you press `Ctrl+C` .
+When you run `yarn dev`, you will see new transactions at intervals in your terminal output until you press `Ctrl+C`.
 
 ![Transfer events detected by the script](https://r2media.rareskills.io/StarknetEvents/image9.png)
 
 ## Filtering Events by Range
 
-When you need historical data analysis and queries, you can use `provider.getEvents()` from Starknet.js to query historical events within a specific block range.
+When you need historical data analysis and queries, you can use `provider.getEvents()` from `Starknet.js` to query historical events within a specific block range.
 
 Replace `src/event.ts` again with this following code example that searches blocks 8000 to 9000 (1000 blocks total) for `Transfer` events from the specified contract:
 
@@ -911,8 +907,8 @@ async function filterTransferEvents() {
 
   // Query for Transfer events within a specific block range
   const events = await provider.getEvents({
-    address: contractAddress,                    // Only events from our target contract
-    keys: [[transferSelector]],                  // Filter for Transfer events only
+    address: contractAddress,                   // Only events from our target contract
+    keys: [[transferSelector]],                 // Filter for Transfer events only
     from_block: { block_number: 8000 },         // Start searching from block 8000
     to_block: { block_number: 9000 },           // Search up to block 9000 (1000 block range)
     chunk_size: 100                             // Process events in batches of 100
@@ -952,8 +948,7 @@ The event data is then decoded to extract the information; sender address (`keys
 As expected, **variable names are NOT optional in Cairo events.** While Solidity allows anonymous event parameters, Cairo requires explicit field names in event struct definitions for all parameters.
 
 # Can events be inherited through parent contracts and interfaces?
-
-Cairo does not support event inheritance. Instead, to reuse events across contracts, you include components in your contract and explicitly list their event definitions within your contract's `#[event]` enum using the `#[flat]` attribute. The events must also be publicly exported to be accessible in other contracts.
+Cairo does not support event inheritance. Instead, to reuse events across contracts, you use components. Components define their own events, and when you include a component in your contract, you reference the component's event type in your contract's `#[event]` enum using the `#[flat]` attribute. This allows multiple contracts to emit the same events by using the same component, without needing to redefine the events in each contract.
 
 For a refresher on key differences between events in Solidity and Cairo, here's a table that shows a clear comparison:
 
