@@ -7,8 +7,7 @@ Most components used in smart contracts come from external libraries. OpenZeppel
 In this tutorial, you’ll learn how to import and use components from OpenZeppelin, rather than building everything from scratch; understand import paths for external crate components; and use the [OpenZeppelin Wizard](https://docs.openzeppelin.com/contracts-cairo/2.x/wizard) to generate boilerplate code.
 
 # Setting Up Dependencies
-
-Before we can import OpenZeppelin components, we need to add the OpenZeppelin Contracts library as a dependency in our project.
+Before we can import OpenZeppelin components, we need to add the OpenZeppelin Contracts library as a dependency in our project. Cairo uses [Scarbs.xyz](https://scarbs.xyz/) as its official package registry, similar to npm for JavaScript or crates.io for Rust.
 
 Create a new scarb project and navigate to its directory:
 
@@ -17,11 +16,17 @@ scarb new erc20_component
 cd erc20_component
 ```
 
-Open `Scarb.toml` and add the OpenZeppelin dependency (`openzeppelin = { git = "[https://github.com/OpenZeppelin/cairo-contracts.git](https://github.com/OpenZeppelin/cairo-contracts.git)", tag = "v2.0.0" }`) under `[dependencies]`:
+Open `Scarb.toml` file in your project directory and add the following entry under the `[dependencies]` section:
+
+```rust
+[dependencies]
+starknet = "2.13.1"
+openzeppelin = "2.0.0" //ADD THIS LINE
+```
 
 ![OpenZeppelin in Scarb.toml](https://r2media.rareskills.io/CairoComponentsOpenZeppelin/image1.png)
 
-The `tag` specifies the OpenZeppelin Contracts version to use. We're using `v2.0.0`, which is the latest stable release at the time of writing. Check the [OpenZeppelin Contracts for Cairo releases page](https://github.com/OpenZeppelin/cairo-contracts/releases) for the current latest version.
+The syntax `openzeppelin = "2.0.0"` automatically fetches the package from [Scarbs.xyz](https://scarbs.xyz/), Cairo's official package registry. The version "2.0.0" specifies which OpenZeppelin Contracts release to use. We're using `v2.0.0`, which is the latest stable release at the time of writing. Check [Scarbs.xyz for OpenZeppelin](https://scarbs.xyz/packages?q=openzeppelin) or the [OpenZeppelin Contracts for Cairo releases page](https://github.com/OpenZeppelin/cairo-contracts/releases) for the current latest version.
 
 Run `scarb build` to download and compile the dependencies. Once the build succeeds, the dependencies are ready and you can import OpenZeppelin components into your contract.
 
@@ -140,7 +145,7 @@ mod RareToken {
 
 Without much effort, we have generated a fully functional contract with mintable, pausable and access control features.
 
-With the generated code in hand, let's break down how the OpenZeppelin components are imported and integrated into the contract
+With the generated code in hand, let's break down how the OpenZeppelin components are imported and integrated into the contract.
 
 ## Understanding the Generated Code
 
@@ -183,11 +188,11 @@ In the screenshot below, notice how the event names highlighted at the top (line
 
 In this case, `ERC20Event`, `PausableEvent`, and `OwnableEvent` was used. Like storage names, these can be anything, but they must match what’s declared in the contract's event enum.
 
-The `#[flat]` attribute applied to each event variant is important here. Recall from the  ***"Using `#[flat]` attribute"*** section of the Events chapter that the `#[flat]` attribute changes event selector hash computation to use inner event names instead of the outer enum variant name.
+The `#[flat]` attribute applied to each event variant is important here. Recall from the  ***"Using `#[flat]` attribute"*** section of the Events chapter that the `#[flat]` attribute changes how event selectors are computed.
 
-Without `#[flat]`, all events from `ERC20Component` would be hashed under `"ERC20Event"`, making individual events like `Transfer` and `Approval` indistinguishable in the transaction log.
+Without `#[flat]`, component events include a component ID as the first key, and all events from a component variant share the same selector computed from the outer enum variant name. For example, both `Transfer` and `Approval` events from `ERC20Component` would use `starknetKeccak("ERC20Event")` as their selector, making it impossible to distinguish between different event types based on the selector alone.
 
-With `#[flat]`, each event maintains its own selector hash (`"Transfer"`, `"Approval"`), enabling precise event filtering and preventing selector collisions between components.
+With `#[flat]`, the component ID prefix is removed, and each event uses its own struct name for the selector: `starknetKeccak("Transfer")`, `starknetKeccak("Approval")`. This enables precise event filtering and matches the standard event structure expected by external tools and indexers.
 
 ### Step 3: Component Implementations
 
@@ -342,7 +347,7 @@ use starknet::ContractAddress;
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 ```
 
-To interact with the standard ERC20 functions in our tests, we need to import the ERC20 interface and its dispatcher trait from OpenZeppelin:
+To interact with the standard ERC-20 functions in our tests, we need to import the ERC-20 interface and its dispatcher trait from OpenZeppelin:
 
 ```rust
 use starknet::ContractAddress;
@@ -352,7 +357,7 @@ use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 ```
 
-The `IERC20Dispatcher` allows us to call standard ERC20 functions like `transfer`, `balance_of`, and `total_supply` on our contract.
+The `IERC20Dispatcher` allows us to call standard ERC-20 functions like `transfer`, `balance_of`, and `total_supply` on our contract.
 
 Recall that the generated contract used the `#[generate_trait]` attribute to automatically create traits for the custom functions (`pause`, `unpause`, `mint`). These traits weren't written explicitly in the contract, so to call these functions in tests, a manual interface definition is needed as shown below:
 
@@ -375,23 +380,15 @@ trait IRareToken<TContractState> {
 
 The `IRareToken` interface in the code above exposes the custom functions in the test environment. The `#[starknet::interface]` attribute generates the dispatcher (`IRareTokenDispatcher`) and dispatcher trait ( `IRareTokenDispatcherTrait`) that will be used to interact with those functions.
 
-We need consistent addresses for the tests. Define helper functions to generate test addresses instead of creating new ones each time:
+We need consistent addresses for the tests. Define constants to provide test addresses instead of creating new ones each time:
 
 ```rust
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
-
-fn USER() -> ContractAddress {
-    'USER'.try_into().unwrap()
-}
-
-fn RECIPIENT() -> ContractAddress {
-   'RECIPIENT'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
+const USER: ContractAddress = 'USER'.try_into().unwrap();
+const RECIPIENT: ContractAddress = 'RECIPIENT'.try_into().unwrap();
 ```
 
-These functions convert string literals into contract addresses.
+These constants convert string literals into contract addresses.
 
 Now we need a helper function to deploy our token contract in the test environment. Add the `deploy_token` function in `test_contract.cairo`:
 
@@ -410,22 +407,14 @@ trait IRareToken<TContractState> {
     fn decimals(self: @TContractState) -> u8;
 }
 
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
-
-fn USER() -> ContractAddress {
-    'USER'.try_into().unwrap()
-}
-
-fn RECIPIENT() -> ContractAddress {
-   'RECIPIENT'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
+const USER: ContractAddress = 'USER'.try_into().unwrap();
+const RECIPIENT: ContractAddress = 'RECIPIENT'.try_into().unwrap();
 
 // NEWLY ADDED //
 fn deploy_token() -> (ContractAddress, IERC20Dispatcher, IRareTokenDispatcher) {
     let contract = declare("RareToken").unwrap().contract_class();
-    let mut constructor_args = array![OWNER().into()];
+    let mut constructor_args = array![OWNER.into()];
     let (contract_address, _) = contract.deploy(@constructor_args).unwrap();
     let token = IERC20Dispatcher { contract_address };
     let rare_token = IRareTokenDispatcher { contract_address };
@@ -435,13 +424,13 @@ fn deploy_token() -> (ContractAddress, IERC20Dispatcher, IRareTokenDispatcher) {
 
 `deploy_token` uses `declare("RareToken").unwrap().contract_class()` to declare the RareToken contract and retrieve its contract class, which loads the compiled contract code.
 
-Next, it prepares the constructor arguments with `array![OWNER().into()]`, which creates an array containing the owner address.
+Next, it prepares the constructor arguments with `array![OWNER.into()]`, which creates an array containing the owner address.
 
 ![Constructor with owner argument highlighted](https://r2media.rareskills.io/CairoComponentsOpenZeppelin/image7.png)
 
-The constructor expects one parameter (the owner address), so we convert it into a felt252 using `.into()` in the test. The token name "RareToken" and symbol "RTK" are already hardcoded in the contract's constructor.
+The constructor expects one parameter (the owner address), so we convert it into a `felt252` using `.into()` in the test. The token name "RareToken" and symbol "RTK" are already hardcoded in the contract's constructor.
 
-Once the arguments are ready, `contract.deploy(@constructor_args).unwrap()` deploys the contract and returns the contract address. With the contract deployed, we create two dispatchers for the same contract address: `IERC20Dispatcher` for standard ERC20 functions and `IRareTokenDispatcher` for the custom functions like `pause()`, `unpause()`, and `mint()`.
+Once the arguments are ready, `contract.deploy(@constructor_args).unwrap()` deploys the contract and returns the contract address. With the contract deployed, we create two dispatchers for the same contract address: `IERC20Dispatcher` for standard ERC-20 functions and `IRareTokenDispatcher` for the custom functions like `pause()`, `unpause()`, and `mint()`.
 
 The function returns a tuple containing the contract address and both dispatchers, giving us everything we need to interact with the deployed contract in our tests.
 
@@ -449,7 +438,7 @@ The function returns a tuple containing the contract address and both dispatcher
 
 The pause function halts all token operations, which is useful during security incidents or maintenance.
 
-Import `start_cheat_caller_address` and `stop_cheat_caller_address`alongside other imports from `snforge_std` to allow us to impersonate different addresses when calling contract functions:
+Import `start_cheat_caller_address` and `stop_cheat_caller_address` alongside other imports from `snforge_std` to allow us to impersonate different addresses when calling contract functions:
 
 ```rust
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,stop_cheat_caller_address};
@@ -467,20 +456,20 @@ fn test_pause_prevents_transfer() {
     let amount_to_mint: u256 = 10000 * token_decimal.into();
 
     // Mint tokens to USER
-    start_cheat_caller_address(contract_address, OWNER());
-    rare_token.mint(USER(), amount_to_mint);
+    start_cheat_caller_address(contract_address, OWNER);
+    rare_token.mint(USER, amount_to_mint);
 
     // Pause the contract
     rare_token.pause();
     stop_cheat_caller_address(contract_address);
 
     // Try to transfer - should fail when paused
-    start_cheat_caller_address(contract_address, USER());
-    token.transfer(RECIPIENT(), 100 * token_decimal.into());  // This should panic
+    start_cheat_caller_address(contract_address, USER);
+    token.transfer(RECIPIENT, 100 * token_decimal.into());  // This should panic
 }
 ```
 
-The test begins by deploying the contract through `deploy_token()`, which returns the contract address and dispatchers we need to interact with the contract. We then retrieve the token's decimal places using `rare_token.decimals()`. ERC20 tokens typically use 18 decimals, so multiplying `10000 * 10^18` gives us 10,000 tokens.
+The test begins by deploying the contract through `deploy_token()`, which returns the contract address and dispatchers we need to interact with the contract. We then retrieve the token's decimal places using `rare_token.decimals()`. ERC-20 tokens typically use 18 decimals, so multiplying `10000 * 10^18` gives us 10,000 tokens.
 
 Next, we use `start_cheat_caller_address` to impersonate the OWNER and mint tokens to USER. While still acting as OWNER, we call `pause()` to activate the `pause()` function, then use `stop_cheat_caller_address` to reset the caller address back to the default.
 
@@ -511,16 +500,16 @@ fn test_pause_prevents_transfer() {
     let amount_to_mint: u256 = 10000 * token_decimal.into();
 
     // Mint tokens to USER
-    start_cheat_caller_address(contract_address, OWNER());
-    rare_token.mint(USER(), amount_to_mint);
+    start_cheat_caller_address(contract_address, OWNER);
+    rare_token.mint(USER, amount_to_mint);
 
     // Pause the contract
     rare_token.pause();
     stop_cheat_caller_address(contract_address);
 
     // Try to transfer - should fail when paused
-    start_cheat_caller_address(contract_address, USER());
-    token.transfer(RECIPIENT(), 100 * token_decimal.into());  // This should panic
+    start_cheat_caller_address(contract_address, USER);
+    token.transfer(RECIPIENT, 100 * token_decimal.into());  // This should panic
 }
 ```
 
@@ -540,26 +529,26 @@ After pausing a contract, you need the ability to resume normal operations. This
 fn test_unpause_allows_transfer() {
     let (contract_address, token, rare_token) = deploy_token();
 
-    *// Get token decimals for proper amount calculation*
+    // Get token decimals for proper amount calculation
     let token_decimal = rare_token.decimals();
     let amount_to_mint: u256 = 1000 * token_decimal.into();
 
-    *// Mint tokens to USER*
-    start_cheat_caller_address(contract_address, OWNER());
-    rare_token.mint(USER(), amount_to_mint);
+    // Mint tokens to USER
+    start_cheat_caller_address(contract_address, OWNER);
+    rare_token.mint(USER, amount_to_mint);
 
-    *// Pause then unpause the contract*
+    // Pause then unpause the contract
     rare_token.pause();
     rare_token.unpause();
     stop_cheat_caller_address(contract_address);
 
-    *// Transfer should now succeed*
-    start_cheat_caller_address(contract_address, USER());
-    token.transfer(RECIPIENT(), 100 * token_decimal.into());
+    // Transfer should now succeed
+    start_cheat_caller_address(contract_address, USER);
+    token.transfer(RECIPIENT, 100 * token_decimal.into());
 
-    *// Verify the transfer worked*
-    assert!(token.balance_of(USER()) == 900 * token_decimal.into(), "User balance incorrect");
-    assert!(token.balance_of(RECIPIENT()) == 100 * token_decimal.into(), "Recipient balance incorrect");
+    // Verify the transfer worked*
+    assert!(token.balance_of(USER) == 900 * token_decimal.into(), "User balance incorrect");
+    assert!(token.balance_of(RECIPIENT) == 100 * token_decimal.into(), "Recipient balance incorrect");
 }
 ```
 
@@ -580,7 +569,7 @@ fn test_only_owner_can_pause() {
     let (contract_address, _token, rare_token) = deploy_token();
 
     // Try to pause as non-owner - should panic
-    start_cheat_caller_address(contract_address, USER());
+    start_cheat_caller_address(contract_address, USER);
     rare_token.pause();
 
     // no need to stop cheat since it doesn't reach here
@@ -597,7 +586,7 @@ Here's the test file we've built:
 
 ```rust
 use starknet::ContractAddress;
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,stop_cheat_caller_address};
+use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address, stop_cheat_caller_address};
 
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 
@@ -610,22 +599,13 @@ trait IRareToken<TContractState> {
     fn decimals(self: @TContractState) -> u8;
 }
 
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
+const USER: ContractAddress = 'USER'.try_into().unwrap();
+const RECIPIENT: ContractAddress = 'RECIPIENT'.try_into().unwrap();
 
-fn USER() -> ContractAddress {
-    'USER'.try_into().unwrap()
-}
-
-fn RECIPIENT() -> ContractAddress {
-   'RECIPIENT'.try_into().unwrap()
-}
-
-// NEWLY ADDED //
 fn deploy_token() -> (ContractAddress, IERC20Dispatcher, IRareTokenDispatcher) {
     let contract = declare("RareToken").unwrap().contract_class();
-    let mut constructor_args = array![OWNER().into()];
+    let mut constructor_args = array![OWNER.into()];
     let (contract_address, _) = contract.deploy(@constructor_args).unwrap();
     let token = IERC20Dispatcher { contract_address };
     let rare_token = IRareTokenDispatcher { contract_address };
@@ -642,16 +622,16 @@ fn test_pause_prevents_transfer() {
     let amount_to_mint: u256 = 10000 * token_decimal.into();
 
     // Mint tokens to USER
-    start_cheat_caller_address(contract_address, OWNER());
-    rare_token.mint(USER(), amount_to_mint);
+    start_cheat_caller_address(contract_address, OWNER);
+    rare_token.mint(USER, amount_to_mint);
 
     // Pause the contract
     rare_token.pause();
     stop_cheat_caller_address(contract_address);
 
     // Try to transfer - should fail when paused
-    start_cheat_caller_address(contract_address, USER());
-    token.transfer(RECIPIENT(), 100 * token_decimal.into());  // This should panic
+    start_cheat_caller_address(contract_address, USER);
+    token.transfer(RECIPIENT, 100 * token_decimal.into());  // This should panic
 }
 
 #[test]
@@ -663,8 +643,8 @@ fn test_unpause_allows_transfer() {
     let amount_to_mint: u256 = 1000 * token_decimal.into();
 
     // Mint tokens to USER
-    start_cheat_caller_address(contract_address, OWNER());
-    rare_token.mint(USER(), amount_to_mint);
+    start_cheat_caller_address(contract_address, OWNER);
+    rare_token.mint(USER, amount_to_mint);
 
     // Pause then unpause the contract
     rare_token.pause();
@@ -672,12 +652,12 @@ fn test_unpause_allows_transfer() {
     stop_cheat_caller_address(contract_address);
 
     // Transfer should now succeed
-    start_cheat_caller_address(contract_address, USER());
-    token.transfer(RECIPIENT(), 100 * token_decimal.into());
+    start_cheat_caller_address(contract_address, USER);
+    token.transfer(RECIPIENT, 100 * token_decimal.into());
 
     // Verify the transfer worked
-    assert!(token.balance_of(USER()) == 900 * token_decimal.into(), "User balance incorrect");
-    assert!(token.balance_of(RECIPIENT()) == 100 * token_decimal.into(), "Recipient balance incorrect");
+    assert!(token.balance_of(USER) == 900 * token_decimal.into(), "User balance incorrect");
+    assert!(token.balance_of(RECIPIENT) == 100 * token_decimal.into(), "Recipient balance incorrect");
 }
 
 #[test]
@@ -686,7 +666,7 @@ fn test_only_owner_can_pause() {
     let (contract_address, _token, rare_token) = deploy_token();
 
     // Try to pause as non-owner - should panic
-    start_cheat_caller_address(contract_address, USER());
+    start_cheat_caller_address(contract_address, USER);
     rare_token.pause();
 }
 ```
