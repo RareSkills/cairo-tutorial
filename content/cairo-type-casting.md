@@ -37,7 +37,7 @@ fn main(){
 }
 ```
 
-At runtime, `try_into()` checks whether `large_number` (1000) can fit into a `u8` (maximum value 255). When the conversion fails, it returns `None`, and the subsequent `unwrap()` call panics with "Option::unwrap failed.", immediately stopping execution instead of allowing data corruption.
+At runtime, `try_into()` checks whether `large_number` (1000) can fit into a `u8` (maximum value 255). When the conversion fails, it returns `None`, and the subsequent `unwrap()` call panics with `"Option::unwrap failed."`, immediately stopping execution instead of allowing data corruption.
 
 The `try_into().unwrap()` syntax is covered in detail in the next section.
 
@@ -47,7 +47,7 @@ Cairo handles type casting through two main traits: `Into` for safe conversions 
 
 ### `Into` Trait: Infallible type casting
 
-The `Into` trait is used for conversions that are guaranteed to succeed. These are "*safe*" conversions where the target type can always represent any value from the source type.
+The `Into` trait is used for conversions that are guaranteed to succeed. These are "*safe*" conversions where the target type can always represent any value from the source type. This trait is automatically available in every Cairo program without needing an import statement.
 
 Here's an example showing conversions from a smaller to larger integer types, and from integers to Cairo's native `felt252` type:
 
@@ -78,37 +78,37 @@ This error occurs because Cairo's `Into` trait is only implemented for safe conv
 
 ### `TryInto` Trait: Fallible type casting
 
-The `TryInto` trait is the right method to use for conversions that might fail if the source value range doesn't fit in the target type.
+The `TryInto` trait is the right method to use for conversions that might fail if the source value range doesn't fit in the target type. Like Into, this trait is also automatically available without needing an import statement.
 
-`TryInto` returns an `Option` enum, which can either be `Some(converted_value)` if the conversion was successful, or `None` if it failed
+`TryInto` returns an `Option` enum, which can either be `Some(converted_value)` if the conversion was successful, or `None` if it failed.
 
 Building on the earlier example where 1000 (`u32`) couldn't safely convert to `u8`, the `try_convert_to_u8` function below shows Cairo's approach to potentially unsafe type conversions. This function takes a `u32` value and attempts to convert it to `u8`. The code shows both successful conversions (when values fit) and failed conversions (when values are too large for `u8`'s 0-255 range):
 
 ```rust
 fn try_convert_to_u8(num: u32) {
-    // Attempt to convert u32 to u8 - returns Option<u8>
+    // Attempt to convert u32 to u8 (returns Option<u8>)
     let result: Option<u8> = num.try_into();
 
     // Use 'match' to handle both success and failure cases
-    // 'match' is Cairo's pattern matching - like a switch statement that checks what's inside Option
+    // 'match' is Cairo's pattern matching (like a switch statement that checks what's inside Option)
 
     match result {
         Option::Some(val) => {
-           // Conversion succeeded - val contains the converted u8 value
+           // Conversion succeeded (val contains the converted u8 value)
            println!("Successfully converted {} to u8: {}", num, val);
         },
         Option::None => {
-           // Conversion failed - number was too large for u8 (which holds 0-255)
+           // Conversion failed (number was too large for u8 (which holds 0-255))
            println!("Conversion failed! {} is too big for u8 (max: 255)", num);
         }
     }
 }
 
 fn main() {
-    try_convert_to_u8(1000);  // Will fail - too large for u8
-    try_convert_to_u8(100);   // Will succeed - fits in u8
-    try_convert_to_u8(255);   // Will succeed - maximum u8 value
-    try_convert_to_u8(256);   // Will fail - exceeds u8 maximum by 1
+    try_convert_to_u8(1000);  // Will fail (too large for u8)
+    try_convert_to_u8(100);   // Will succeed (fits in u8)
+    try_convert_to_u8(255);   // Will succeed (maximum u8 value)
+    try_convert_to_u8(256);   // Will fail (exceeds u8 maximum by 1)
 }
 ```
 
@@ -122,19 +122,19 @@ When we call `try_convert_to_u8(1000)`, the diagram below shows how the conversi
 
 ![Visual diagram of an Option containing a None](https://r2media.rareskills.io/CairoTypeCasting/image2.png)
 
-Since the conversion returned `None`, the `match` statement detects that it’s empty and executes the `Option::None` branch, printing the error message "Conversion failed! 1000 is too big for u8 (max: 255).”
+Since the conversion returned `None`, the `match` statement detects that it’s empty and executes the `Option::None` branch, printing the error message **"Conversion failed! 1000 is too big for u8 (max: 255).”**
 
 Subsequently, when `try_convert_to_u8(100)` runs, the diagram below shows how the conversion returns `Some(100)` in `Option<u8>` because 100 fits within the valid range of 0-255:
 
 ![Visual diagram of an Option containing a Some](https://r2media.rareskills.io/CairoTypeCasting/image1.png)
 
-Since the conversion succeeded, the `match` statement executes the `Option::Some(val)` branch, printing "Successfully converted 100 to u8: 100."
+Since the conversion succeeded, the `match` statement executes the `Option::Some(val)` branch, printing **"Successfully converted 100 to u8: 100."**
 
 ### When to use `into()` or `try_into()`
 
 **Use `into()` for:**
 
-- Converting smaller types to larger ones (e.g., u32 → u64)
+- Converting smaller types to larger ones (e.g., `u32` to `u64`)
 - Any conversion where data loss is impossible
 
 > `into()` explicitly disallows casting from larger to smaller types, even if the specific value would fit in the target range.
@@ -142,9 +142,9 @@ Since the conversion succeeded, the `match` statement executes the `Option::Some
 
 **Use `try_into()` for:**
 
-- Converting larger types to smaller ones (u32 → u8)
+- Converting larger types to smaller ones (`u32` to `u8`)
 - Any conversion where the value might not fit
-- When you want to handle conversion failures gracefully instead of panicking (use `try_into()` with `match`
+- When you want to handle conversion failures gracefully instead of panicking, use `try_into()` with `match`
 
 With an understanding of Cairo's casting mechanisms, we can now look into how these traits apply to specific conversion scenarios.
 
@@ -222,7 +222,7 @@ This shows how to handle both successful and failed conversions gracefully witho
 
 Cairo doesn't allow direct conversion from integer types to addresses. Instead, conversions must go through `felt252` as an intermediate type. Converting `uints` to addresses becomes necessary when working with user IDs, numeric identifiers, or when deriving addresses from integer calculations in smart contracts.
 
-The conversion process involves two steps: first converting the integer to `felt252`, then converting the `felt252` to `ContractAddress`.
+The conversion process involves two steps: first converting the integer to `felt252`, then converting the `felt252` to `ContractAddress`:
 
 ```rust
 use starknet::ContractAddress;
@@ -233,7 +233,7 @@ fn user_address(user_id: u64) -> ContractAddress {
 }
 ```
 
-The `user_address` takes a `u64` user_id. It first converts the `u64` value to `felt252` using `.into()` which always succeeds because `felt252` can hold any `u64` value and store it in address_felt. Then it converts `felt252` address_felt to `ContractAddress` using `.try_into().unwrap()`.
+The `user_address` function accepts a `u64` parameter user_id. It first converts the `u64` value to `felt252` using `.into()` which always succeeds because `felt252` can hold any `u64` value and store it in address_felt. Then it converts `felt252` address_felt to `ContractAddress` using `.try_into().unwrap()`.
 
 We use `.try_into()` because it's the only available conversion method from `felt252` to `ContractAddress`. The `.unwrap()` extracts the result but will panic if the conversion fails.
 
@@ -245,9 +245,9 @@ For cases where we are confident the value will fit, say when value is within th
 
 ```rust
 fn convert_u256_to_address(value: u256) -> ContractAddress {
-    // First step: convert u256 to felt252 - will panic if value exceeds felt252 range
+    // First step: convert u256 to felt252 (will panic if value exceeds felt252 range)
     let address_felt: felt252 = value.try_into().unwrap();
-    // Second step: convert felt252 to ContractAddress - will panic if outside valid address range
+    // Second step: convert felt252 to ContractAddress (will panic if outside valid address range)
     address_felt.try_into().unwrap()
 }
 ```
@@ -259,14 +259,14 @@ fn safe_convert_u256_to_address(value: u256) -> Option<ContractAddress> {
     // First step: try to convert u256 to felt252 (might fail if value is too large)
     match value.try_into() {
         Option::Some(felt_val) => {
-            // u256 → felt252 conversion succeeded
+            // u256 to felt252 conversion succeeded
             let address_felt: felt252 = felt_val;
             // Second step: try to convert felt252 to ContractAddress
             // This can also fail if the felt252 value is outside valid address range
             address_felt.try_into()
         }
         Option::None => {
-            // u256 → felt252 conversion failed (value too large for felt252)
+            // u256 to felt252 conversion failed (value too large for felt252)
             Option::None
         }
     }
@@ -310,7 +310,7 @@ fn main() {
 }
 ```
 
-When this code runs, it displays "Character 'A' as `u8`: 65" in the terminal because the character value fits into the target type. If the value doesn't fit, the program will panic, so handling cases when the conversion success is uncertain is important.
+When this code runs, it displays **"Character 'A' as `u8`: 65"** in the terminal because the character value fits into the target type. If the value doesn't fit, the program will panic, so handling cases when the conversion success is uncertain is important.
 
 ### ByteArray Operations
 
@@ -402,7 +402,7 @@ fn main() {
 }
 ```
 
-So the key point is: `bool` → `felt252` works automatically, but `bool` → integer types require manual conversion, and no automatic casting works in the reverse direction.
+So the key point is: `bool` to `felt252` works automatically, but `bool` to integer types require manual conversion, and no automatic casting works in the reverse direction.
 
 In most cases, booleans should remain as booleans for better type safety and code clarity.
 
