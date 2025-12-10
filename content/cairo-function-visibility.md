@@ -37,8 +37,8 @@ mod HelloStarknet {
     impl HelloStarknetImpl of super::IHelloStarknet<ContractState> {
         // ... existing functions (increase_balance, get_balance) ...
 
-				// NEWLY ADDED FUNCTION
-				// Note: This function will throw
+		// NEWLY ADDED FUNCTION
+		// Note: This function will throw error
         fn get_balance_2x(self: @ContractState) -> felt252 {
             self.balance.read() * 2
         }
@@ -50,7 +50,7 @@ We get a compilation error because `get_balance_2x` is not part of the `IHelloSt
 
 ![Screenshot 2025-10-14 at 12.14.23.png](https://r2media.rareskills.io/CairoFunctionVisibility/image4.png)
 
-As stated earlier, when implementing a trait in Cairo, the `impl` block can only contain the functions defined in that trait. Functions that are not part of the trait must be defined in separate `impl` blocks. This differs from Solidity, where contracts can freely add functions beyond those in the interface they implement.
+As stated earlier, when implementing a trait in Cairo, the `impl` block can only contain the functions defined in that trait. A contract can have multiple `impl` blocks, and functions that are not part of the trait must be defined in separate `impl` blocks. This differs from Solidity, where contracts can freely add functions beyond those in the interface they implement.
 
 However, we specifically don’t want to include `get_balance_2x` in the `IHelloStarknet` trait because that would make the function public.
 
@@ -63,11 +63,10 @@ Add the following code inside the `HelloStarknet` contract module, after the `He
 
 ```rust
 // NEWLY ADDED //
-    #[generate_trait]
-    impl InternalFunction of IInternal {
-        fn get_balance_2x(self: @ContractState) -> felt252 {
-            self.balance.read() * 2
-        }
+#[generate_trait]
+impl InternalFunction of IInternal {
+    fn get_balance_2x(self: @ContractState) -> felt252 {
+        self.balance.read() * 2
     }
 }
 ```
