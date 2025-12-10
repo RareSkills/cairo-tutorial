@@ -28,6 +28,7 @@ contract SomeContract {
         // callMe logic
     }
 }
+
 ```
 
 Modifiers allow you to keep your main function logic clean by moving preconditions elsewhere like we have in the `onlyOwner` modifier above.
@@ -37,6 +38,8 @@ Modifiers allow you to keep your main function logic clean by moving preconditio
 In Cairo, there’s no modifier keyword. Instead, we define a regular function to enforce our checks, let’s say `only_owner` and invoke it inside the `call_me` function.
 
 The code below shows an example of how that might look:
+
+The constructor assigns the caller’s address (`get_caller_address()` is similar to Solidity’s `msg.sender`) to the `owner` variable.
 
 ```rust
 #[starknet::contract]
@@ -76,12 +79,14 @@ mod SomeContract {
         }
     }
 }
+
 ```
 
 This Cairo version mirrors the Solidity pattern by restricting access to the `call_me` function. It ensures only the owner can call it by asserting that the caller’s address matches the stored owner in the contract state.
 
 ```rust
 assert(caller == stored_owner, 'Not owner');
+
 ```
 
 **The `assert` function behaves similarly to Solidity’s `require`** which halts execution and reverts the transaction if the condition fails. To make it even better,  Cairo offers another function called `assert!`, which supports formatted error messages, making it more expressive.
@@ -96,6 +101,7 @@ The first argument, `condition`, is a boolean expression. If it’s `false`, the
 
 ```rust
 assert(condition, 'static error message');
+
 ```
 
 `assert!`:
@@ -105,6 +111,7 @@ assert(condition, 'static error message');
 
 ```rust
 assert!(condition, "Formatted error: {}", variable);
+
 ```
 
 ### What the `{}` Means in the Formatted String
@@ -117,12 +124,14 @@ Think of it like a *fill-in-the-blank*:
 let name = "Alice";
 println!("Hello, {}", name);
 // Prints: Hello, Alice
+
 ```
 
 We can have multiple placeholders:
 
 ```rust
 println!("x = {}, y = {}", x, y);
+
 ```
 
 The order matters: each `{}` is filled by the corresponding argument after the string.
@@ -130,7 +139,7 @@ The order matters: each `{}` is filled by the corresponding argument after the s
 This gives developers more flexibility when debugging or handling errors. Instead of a static string, you can include runtime values in the message, something Solidity’s `require` doesn’t support directly.
 
 > The recommended method is to use `assert!`, even in production.
->
+> 
 
 ## Supported Types in `assert!`
 
@@ -151,12 +160,14 @@ let caller: ContractAddress = get_caller_address();
 
 // ❌ This will fail to compile
 assert!(caller == owner, "Caller was: {}", caller);
+
 ```
 
 You’ll see an error like:
 
 ```
 Trait has no implementation in context: core::fmt::Display::<core::starknet::contract_address::ContractAddress>
+
 ```
 
 To work around this, you can convert the address to a `felt252` if you just need the numeric representation:
@@ -167,6 +178,7 @@ let caller_felt: felt252 = caller.into();
 
 // ✅ This works, assuming the `owner` variable is of type felt252 too
 assert!(caller_felt == owner, "Caller was: {}", caller_felt);
+
 ```
 
 So while `assert!` gives you expressive error handling, keep in mind the type requirements when formatting your messages.
