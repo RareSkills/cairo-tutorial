@@ -1,14 +1,14 @@
 # Introduction to the Cairo Language
 
-Cairo is a domain-specific programming language designed for provable, verifiable computation, particularly within the context of zero-knowledge systems like Starknet, a Layer 2 (L2) network on Ethereum.
+Cairo is a programming language designed for provable, verifiable computation, particularly within the context of zero-knowledge systems like Starknet, a Layer 2 (L2) network on Ethereum.
 
 Cairo is purpose-built to enable STARK-based proofs of program execution. This allows computations to be verified efficiently off-chain and then proven on-chain with succinct, trustless proofs.
 
-Though the language was created for blockchain use cases, Cairo is general enough to support off-chain verifiable computation with cryptographic integrity. Unlike Solidity, Cairo can be run outside the context of smart contracts.
+Though the language was created for blockchain use cases, Cairo is flexible within its domain, as it supports off-chain verifiable computation with cryptographic integrity. Unlike Solidity, Cairo can be run outside the context of smart contracts. In that sense, Cairo behaves almost like a general-purpose language constrained to smart contracts and provable offchain computation.
 
 This article gives an overview of how the language works. We will cover major data types, control flow mechanisms, and commonly used data structures.
 
-## **Cairo's role in Starknet**
+## Cairo's role in Starknet
 
 Starknet uses STARKs (Scalable Transparent Arguments of Knowledge) to enable the execution of complex computations off-chain while preserving the security and decentralization of Ethereum.
 
@@ -19,71 +19,78 @@ This article introduces the basics of the Cairo programming language and shows h
 ## Setting up the development environment
 
 1. Create an empty directory and navigate into it.
-
+    
     The directory can have any name, in this example, it’s called `cairo_playground`:
-
+    
     ```bash
     mkdir cairo_playground && cd cairo_playground
+    
     ```
-
+    
 2. Create a source folder inside the `cairo_playground` directory:
-
+    
     ```bash
     mkdir src
+    
     ```
-
+    
 3. Inside the `src` folder, create two files: `playground.cairo` (*name can vary*) and `lib.cairo`:
-
+    
     ```bash
     touch src/playground.cairo && touch src/lib.cairo
+    
     ```
-
+    
 4. Add the following content to the new files.
-
+    
     `playground.cairo`:
-
+    
     ```rust
     #[executable]
     fn main() {
         // Print message to terminal.
         println!("Hello from Rareskills!!!");
     }
+    
     ```
-
+    
     `lib.cairo`:
-
+    
     ```rust
     mod playground;
+    
     ```
-
+    
 5. Create a `Scarb.toml` file in the project root (`cairo_playground`):
-
+    
     ```rust
     touch Scarb.toml
+    
     ```
-
+    
     Add the following content:
-
+    
     ```toml
     [package]
     name = "cairo_playground" # HAS TO BE THE NAME OF THE ROOT DIRECTORY
     version = "0.1.0"
     edition = "2024_07"
-
+    
     [cairo]
     enable-gas = false
-
+    
     [dependencies]
     cairo_execute = "2.12.0"
-
+    
     [[target.executable]]
     # A PATH TO THE FUNCTION WITH THE #[executable] ANNOTATION
     # <root-directory>::<file-name>::<function-name>
     function = "cairo_playground::playground::main"
+    
     ```
-
+    
     The `#[executable]` annotation will be explained in a later subsection.
-
+    
 
 After completing the setup, the directory should have a structure similar to this:
 
@@ -93,6 +100,7 @@ Lastly, to test the Cairo program (`playgroung.cairo`), run the following comman
 
 ```bash
 scarb execute
+
 ```
 
 ## The Cairo language syntax essentials & data types
@@ -109,6 +117,7 @@ Cairo is statically typed, and all variables must have their type declared at co
 let count: u8 = 42;
 let name: felt252 = 'bob';
 let active: bool = true;
+
 ```
 
 ### Variables mutability
@@ -120,6 +129,7 @@ Variables in Cairo are immutable by default. They can not be modified after assi
 
 let mut total: u128 = 0;
 total = total + 10;
+
 ```
 
 ### Declare a constant
@@ -131,6 +141,7 @@ Here is how to declare a constant:
 ```rust
 // const <NAME>: <Type> = <value>;
 const DECIMALS: u8 = 18;
+
 ```
 
 ## Declaring functions in Cairo
@@ -153,6 +164,7 @@ fn main() {
    let result = multiply(3, 4);  // result = 12
    println!("This is the value of multiply(3, 4): {}", result);
 }
+
 ```
 
 In a function, we can return a value explicitly using the `return` keyword. However, as seen in the `multiply` function above, it's also possible to return a value implicitly. When the last expression in a function body is **not** followed by a semicolon, its result is automatically returned.
@@ -170,7 +182,7 @@ To execute `main`, above, enter the `scarb execute` command in your terminal. Th
 ![scarb exercute command in the termal execution and print result](https://r2media.rareskills.io/CairoHelloWorld/image4.png)
 
 **Note:** The `#[executable]` attribute is not applicable to [smart contracts](https://book.cairo-lang.org/ch100-00-introduction-to-smart-contracts.html?highlight=smart%20contract#smart-contracts---introduction).
-In fact, the example above is not a smart contract, but a regular Cairo program. This is possible because, unlike Solidity, Cairo is a general-purpose language that can be executed outside the context of a smart contract. Using the Cairo runner, you can write and run standalone programs without deploying them to Starknet.
+In fact, the example above is not a smart contract, but a regular Cairo program. This is possible because, unlike Solidity that is domain-specific, Cairo can be executed outside the context of a smart contract. Using the Cairo runner, you can write and run standalone programs without deploying them to Starknet.
 
 ### Printing data in Cairo functions
 
@@ -200,6 +212,7 @@ fn main() {
     // Mixing named and positional placeholders
     println!("Cairo v{} was released in {released}", version);
 }
+
 ```
 
 ## Data Types in Cairo
@@ -210,7 +223,10 @@ Now that we have seen how variables are declared in Cairo, let us explore the ma
 
 In Cairo, the most fundamental data type is a field element denoted by `felt252`. It is the default numeric type in the language, and represents an element of the prime field used by the Cairo VM. This field is shown below:
 
-                                                                   $p = 2^{251} + 17*2^{192} + 1$
+```
+p = 2^{251} + 17*2^{192} + 1
+
+```
 
 This means a `felt252` value can range from `0` up to `p - 1`. All arithmetic performed on `felt252` values is modular arithmetic over this field. When a result exceeds p−1, it wraps back to 0, similar to how hours wrap around on a clock.
 
@@ -245,11 +261,12 @@ fn main() {
     let wrap_result_10 = MAX_FELT252 + anyvalue;
     println!("MAX_FELT252 + {} = {}", anyvalue, wrap_result_10);
 }
+
 ```
 
 Terminal output:
 
-![image.png](https://r2media.rareskills.io/CairoHelloWorld/image1.png)
+![A screenshot showing the terminal output from the code snippet above](https://r2media.rareskills.io/CairoHelloWorld/image1.png)
 
 Because of this wrapping behavior, arithmetic errors (i.e., overflow) caused by unintended wrapping can occur if not carefully handled.
 
@@ -264,10 +281,16 @@ Field elements in Cairo's `felt252` type operate under finite field arithmetic p
 
 If a = 1, and b=2, we would have `1 × 2⁻¹`.
 
-                                     Since,   $2 × (P+1)/2 = P+1 ≡ 1 \pmod P$.
+Since,   
+$$
+2 × (P+1)/2 = P+1 ≡ 1 \pmod P
+$$
+
+$$
+1 ÷ 2 ≡ (P + 1)/2 \pmod P
+$$
 
 
-                                     $1 ÷ 2 ≡ (P + 1)/2 \pmod P$.
 
 In the code block below, we will show how the proof above is true and see the behavior of `felt252` division with or without remainder.
 
@@ -293,6 +316,7 @@ fn main() {
     println!("this is the value of felt252_div(4, 3): {}", felt252_div(4, 3));
 
 }
+
 ```
 
 Terminal output:
@@ -303,7 +327,12 @@ As seen in the test above, division in the Cairo field works similarly to intege
 
 However, it is different when the divisions have remainder(s).  For example, if we divide 4 by 3, we aren’t asking “how many times does three go into four,” but rather, “what value multiplied by three gives four in this field?”
 
-                                                           $n\cdot 3 \equiv 4 \pmod p$
+
+$$
+    n\cdot 3 \equiv 4 \pmod p
+$$
+
+
 
 In field arithmetic, the answer is the product of four and the modular inverse of three. This ensures that the result, when multiplied by three, yields four modulo the field’s prime.
 
@@ -314,6 +343,7 @@ In Cairo, when you assign a numeric literal without specifying a type, as shown 
 ```rust
 let count = 42;
 // count's is of type felt252
+
 ```
 
 That’s because `felt252` is Cairo’s default numeric type, similar to how `int` is used by default in some other languages.
@@ -338,6 +368,7 @@ struct u256 {
     low: u128,  // Least significant 128 bits
     high: u128, // Most significant 128 bits
 }
+
 ```
 
 For example, the value `7` of type `u256` is halved like so:
@@ -351,13 +382,24 @@ let value: u256 = 7;
 //    ________high 128-bit__________   __________low 128-bit_________
 //   |                              | |                              |
 // 0x00000000000000000000000000000000 00000000000000000000000000000007
+
 ```
 
 ### 3. Signed Integers: `i8`, `i16`, `i32`, `i64`, `i128`
 
 Signed integers in Cairo are written using a lowercase `i` followed by the bit width, such as `i8`, `i16`, `i32`, `i64`, or `i128`. Each signed type can represent values within a range centered around zero, calculated using the formula:
 
-                                                    $Range=−2 ^{n−1}$    to    $2^{n−1} −1$
+
+$$
+Range=−2 ^{n−1}
+$$    
+
+to   
+
+$$
+2^{n−1} −1
+$$
+
 
 For example, the range for `i8` is `-128..127`.
 
@@ -397,7 +439,6 @@ fn main() {
     println!("Underflow result: {}", result);
     //returns -> error: Panicked with 0x753235365f616464204f766572666c6f77 ('u256_add Overflow').
 
-
     // This will panic on overflow
     let result = add_u256(MAX_U256, 1);
     println!("Overflow result: {}", result);
@@ -427,11 +468,9 @@ Tuples hold fixed sets of values of different types. They're useful for returnin
 
 ```rust
 let pair: (felt252, bool) = (42, true);
-let (num, flag) = pair;  // Destructuring
 
-// Accessing tuple elements by index
-let first_element = pair.0;
-let second_element = pair.1;
+// Accessing tuple elements by destructuring
+let (first_element, first_element) = pair; 
 ```
 
 ### Structs
@@ -439,17 +478,23 @@ let second_element = pair.1;
 Structs are custom data types with named fields.
 
 ```rust
+// Define the struct
 struct Point {
     x: felt252,
     y: felt252,
 }
 
-let p = Point { x: 3, y: 4 };
-
-// Accessing struct fields
-let x_coordinate = p.x;
-let y_coordinate = p.y;
-
+#[executable]
+fn main() {
+    let p = Point { x: 3, y: 4 };
+    
+    // Accessing struct fields
+    let x_coordinate = p.x;
+    let y_coordinate = p.y;
+    
+    println!("The x coordinate of point p is: {}", x_coordinate);
+    println!("The y coordinate of point p is: {}", y_coordinate);
+}
 ```
 
 ### Enums
@@ -480,14 +525,15 @@ match msg {
     Message::Write(text) => { /* handle write with text */ },
     Message::Color((r, g, b)) => { /* handle color with RGB values */ },
 }
+
 ```
 
 ## Strings, short strings, bytearray
 
 Text handling in Cairo is lower-level compared to high-level languages. The language does not have a traditional `String` type like in Rust or JavaScript, but it provides two core primitives for handling textual data:
 
-- **Short strings**: string literals encoded into `felt252`, limited to 31 bytes.
-- **`ByteArray`**: a built-in type for dynamically-sized UTF-8 strings and byte sequences, with utilities for UTF-8 decoding and manipulation.
+- **Short strings**: string literals encoded into `felt252` (or `bytes31`), limited to 31 bytes.
+- **`ByteArray`**: a built-in type for dynamically-sized ASCII characters and byte sequences.
 
 Let’s walk through the details of these string types.
 
@@ -499,23 +545,27 @@ Let’s take the lowercase `'hello world'`, a total of 11 characters, which is w
 
 ```rust
 // Note the single quotes around the string.
-let greeting = 'hello world';  // Fits within 31 ASCII characters
+let greeting: felt252 = 'hello world';  // Fits within 31 ASCII characters
 
-// 'hello world'
+//            OR
+
+let greeting: bytes31 = 'hello world'.try_into().unwrap(); // Fits within 31 ASCII characters
+
+//               ' h e  l  l  o     w  o  r  l  d '
 // → ASCII bytes: 68 65 6C 6C 6F 20 77 6F 72 6C 64
 // → Hex: 0x68656c6c6f20776f726c64
-
 ```
 
 If we map each of the characters in the `'hello world'` example to its [ASCII code](https://www.asciitable.com/), and pack those bytes into a single hex value, from left to right we would have: `0x68656c6c6f20776f726c64`.
 
 ### Byte Arrays strings
 
-The `ByteArray` type in Cairo is designed to handle UTF-8 encoded strings and arbitrary byte sequences that exceed the 31-byte limit of a single `felt252`. This makes it essential for managing dynamic-length data.
+The `ByteArray` type in Cairo is designed to handle ASCII characters and arbitrary byte sequences that exceed the 31-byte limit of a single `felt252`. This makes it essential for managing dynamic-length data.
 
 ```rust
 // Note the double quotes around the long string.
 let long_string: ByteArray = "Hello, Cairo! This is a longer string that exceeds 31 bytes and demonstrates ByteArray usage perfectly.";
+
 ```
 
 Internally, `ByteArray` uses a hybrid storage structure. The code block below, shows how `ByteArray` struct includes three fields that work together to store byte data:
@@ -526,6 +576,7 @@ pub struct ByteArray {
     pub(crate) pending_word: felt252,     // Incomplete bytes (up to 30 bytes)
     pub(crate) pending_word_len: usize,   // Number of bytes in pending_word
 }
+
 ```
 
 - The `data` field holds complete 31-byte chunks stored as `bytes31`.
@@ -548,6 +599,7 @@ fn main() {
     // Long string (>62 bytes) - multiple chunks in data + remainder in pending_word
     let long_data: ByteArray = "ByteArray stores data efficiently using 31-byte chunks in the data field, with any remaining bytes stored in pending_word field";  // 127 bytes total
 }
+
 ```
 
 ## Control flow in Cairo
@@ -579,6 +631,7 @@ fn main() {
 
     println!("this is the value of result: {}", _result);
 }
+
 ```
 
 Note that if we had defined `x` as a `felt252` in the example above, the program would fail at compile time. This is because `felt252` does not implement the `PartialOrd` [trait](https://book.cairo-lang.org/appendix-02-operators-and-symbols.html?highlight=PartialOrd#operators), which is required to use comparison operators like `<`, `>`, `<=`, and `>=`. This limitation is a deliberate design choice in Cairo to prevent cryptographic mistakes that could arise from relying on the numerical ordering of field elements.
@@ -606,6 +659,7 @@ fn loop_sum(limit: felt252) -> felt252 {
 
     sum
 }
+
 ```
 
 In this example, the `loop` continues indefinitely until `i == limit`, at which point `break` exits the loop.
@@ -618,6 +672,7 @@ while i < 5 {
     // Do something
     i += 1;
 }
+
 ```
 
 **for**: The `for` loop in Cairo works only with statically defined ranges. This means you can iterate over a constant or literal range using the syntax `for i in 0..n`, where `n` must be a compile-time constant or a known value at the start of the loop.
@@ -644,6 +699,7 @@ fn main() {
         let _ = val;
     }
 }
+
 ```
 
 ## Arrays and Dictionaries in Cairo
@@ -658,6 +714,7 @@ The code below shows how to create a new array.
 use array::ArrayTrait;
 
 let mut numbers = ArrayTrait::<felt252>::new();
+
 ```
 
 Local (memory) arrays are **immutable by default**. So we use `let mut` to make them mutable, as shown below.
@@ -667,12 +724,14 @@ Afterwards, we can add items into the array by calling the `.append(value)`.
 ```rust
 numbers.append(10); // the element 10 is appended to index 0
 numbers.append(20); // the element 10 is appended to index 1
+
 ```
 
 Alternatively, we can use `array!` to append items at compile-time sequentially:
 
 ```rust
 let arr = array![1, 2, 3, 4, 5];
+
 ```
 
 ### Array Method
@@ -684,7 +743,7 @@ Each array is backed with built-in methods which is exposed through the `array::
 - `.pop_front()`: remove elements from the front of an array
 - `.len()`: Returns the number of elements.
 - `.pop_front()`: Removes and returns the last element.
-- `isEmpty()`:  Returns `true` if the array is empty, else returns `false`.
+- `isEmpty()`: Returns `true` if the array is empty, else returns `false`.
 - `.get(index)` or `at(index)` : Reads an item at a specific index.
 
 In Cairo, both `.get(index)` and `.at(index)` are used to access elements in an array, but they differ in behavior. The `.get(index)` method returns an `Option<T>`, which means the result could either be `Option::Some(value)` if the index is within bounds, or `Option::None` if it’s not. This makes `.get()` the safer choice, especially in situations where you can’t guarantee that the index is valid.
@@ -730,6 +789,7 @@ fn main() {
     mixed.append(MixedValue::FeltArray(nested_array));
 
 }
+
 ```
 
 ### Dictionaries (`Felt252Dict<T>` data type)
@@ -763,6 +823,7 @@ fn main() {
     // Demonstrate that jane was not inserted by checking if the returned value is 0
     assert!(jane_balance == 25, "jane_balance should be 0 since she was never added");
 }
+
 ```
 
 When we run the code above, the first assertion will fail because the key `'clark'` was inserted with a value of `50`, therefore, the condition `clark_balance == 100` evaluates to false.
@@ -771,7 +832,7 @@ If we comment the first assertion out to allow the second one to run, the progra
 
 ![Cairo program panic result](https://r2media.rareskills.io/CairoHelloWorld/image3.png)
 
-### Compound types **inside Dictionaries**
+### Compound types inside Dictionaries
 
 ```rust
 let mut dict: Felt252Dict<u64> = Default::default();
@@ -808,6 +869,7 @@ fn main() {
     let more_data = array![0xff, 0x00, 0xaa];
     storage.insert(2, NullableTrait::new(more_data));
 }
+
 ```
 
 This example shows how arrays can be inserted into the dictionary using unique felt keys, with `Nullable` providing a safe wrapper that can represent either a value or an empty state.
@@ -816,7 +878,7 @@ This example shows how arrays can be inserted into the dictionary using unique f
 
 Cairo is a Rust-like language with familiar control structures.
 
-- The `felt252` data type is the default for numeric types. Many data types get converted to  `felt252` behind the scenes.
+- The `felt252` data type is the default for numeric types. Many data types get converted to `felt252` behind the scenes.
 - Using signed and unsigned is preferred over `felt252` type due to overflow protection.
 - Variables are immutable by default and must be declared `mut` if their value will change in the future.
 - Cairo supports arrays and dictionaries for grouping data together.
