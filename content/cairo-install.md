@@ -1,6 +1,8 @@
 # Cairo for Solidity Developers
 
-Cairo is a Rust-inspired language that compiles to bytecode, which runs on the Cairo Virtual Machine. The Cairo Virtual Machine is a zero-knowledge virtual machine (ZKVM) used by the Starknet blockchain for executing smart contracts. In this tutorial series, we do not assume prior experience with Rust or zero-knowledge proofs. However, this tutorial series assumes prior experience with Solidity. We expect that the reader knows how to code an ERC-20 and [ERC-721](https://rareskills.io/post/erc721) and has a conceptual idea of how dApps like Uniswap V2 work.
+Cairo is a Rust-inspired language that compiles to bytecode, which runs on the Cairo Virtual Machine. The Cairo virtual machine is a zero-knowledge virtual machine (ZKVM) that can execute any Cairo program. Unlike Solidity, which is purpose-built only for smart contracts, Cairo is a general-purpose programming language designed for creating provable programs. 
+
+This tutorial series focuses on using Cairo for smart contracts on Starknet. We do not assume prior experience with Rust or zero-knowledge proofs. However, this tutorial series assumes prior experience with Solidity. We expect that the reader knows how to code an ERC-20 and [ERC-721](https://rareskills.io/post/erc721) and has a conceptual idea of how dApps like Uniswap V2 work.
 
 Cairo has been carefully designed to help Solidity developers learn the language quickly, and this series highlights their similarities so that Solidity developers can reuse the mental models gained from Solidity to quickly understand Cairo.
 
@@ -10,62 +12,16 @@ To get started writing Cairo smart contracts, you'll need **Scarb** (Cairo's pac
 
 ### Installation
 
-The easiest way to install these tools is using `starkup`, which automatically installs Scarb, Starknet Foundry, and the Cairo compiler in one command.
-
-However, at the time of writing, `starkup` installs Scarb version `2.11.4` and snforge version `0.48.1`.
-
-**For this tutorial series, we need Scarb `v2.12.0` and snforge `v0.48.0`** to avoid compatibility issues, as some syntax in this series may cause other versions to behave differently or fail to compile certain examples.
-
-To use these specific versions, we recommend installing via `asdf` because it allows precise version control and the ability to manage multiple versions of different programming tools. If you don't have `asdf` installed, follow the [installation guide](https://asdf-vm.com/guide/getting-started.html).
-
-***Note: This guide uses `asdf` v0.16.0 or newer. If you're using an older version, we recommend updating to the latest version.***
-
-**Set up Scarb version `v2.12.0`:**
-
-- Add the Scarb plugin to asdf:
+To install these tools, use `starkup`, which automatically installs `asdf` and then uses it to install Scarb, Starknet Foundry, and the Cairo compiler in one command. Open your terminal and enter the following command:
 
 ```bash
-asdf plugin add scarb
+curl --proto '=https' --tlsv1.2 -sSf https://sh.starkup.dev | sh
 ```
 
-- Install Scarb version 2.12.0:
+After installation completes, restart your terminal or run:
 
 ```bash
-asdf install scarb 2.12.0
-```
-
-- Set the version for 2.12.0:
-
-```bash
-# Set globally for all projects
-asdf set scarb 2.12.0
-```
-
-**Setup Starknet Foundry `v0.48.0`:**
-
-- Add the Starknet Foundry plugin to asdf:
-
-```bash
-asdf plugin add starknet-foundry
-```
-
-- Install version 0.48.0:
-
-```bash
-asdf install starknet-foundry 0.48.0
-```
-
-- Set the version for 0.48.0:
-
-```bash
-# Set globally for all projects
-asdf set starknet-foundry 0.48.0
-```
-
-- Restart your shell for the changes to take effect:
-
-```rust
-exec zsh  # or exec bash if using bash
+source ~/.bashrc  # or source ~/.zshrc if using zsh
 ```
 
 Verify the installations:
@@ -75,11 +31,15 @@ scarb --version
 snforge --version
 ```
 
-![A terminal showing the scarb and snforge version commands being run](https://r2media.rareskills.io/CairoInstall/image6.png)
+You should see output similar to:
+
+![A screenshot showing how to get the version for scarb and snforge in the terminal.](https://r2media.rareskills.io/CairoInstall/image6.png)
 
 ### Creating your first project
 
-Create an empty directory with lowercase letters and underscores only (e.g., `hello_world`). Avoid capital letters or dashes (-), as Scarb package names must follow snake_case convention. Navigate into the directory, then run:
+Create an empty directory with lowercase letters and underscores only (e.g., `hello_world`). Avoid capital letters or dashes (-), as Scarb package names must follow snake_case convention. 
+
+Navigate into the directory, then run:
 
 ```bash
 scarb init
@@ -165,13 +125,13 @@ Cairo contracts have the following capabilities and/or differences compared to S
 - Like Rust, Cairo is not object-oriented and therefore does not support inheritance. However, Cairo provides other ways to compose code together
 - Solidity contracts upgrade through proxy patterns; however, Cairo contracts can upgrade their bytecode while keeping the storage intact
 - There is no “native token” in Cairo and hence no `msg.value`. By default, gas is paid using the STRK token, which is an ERC-20 token. You can see the token on the [explorer here](https://voyager.online/contract/0x04718f5a0Fc34cC1AF16A1cdee98fFB20C31f5cD61D6Ab07201858f4287c938D).
-- Starknet has account abstraction built into the protocol, so there is no such thing as an “Exaternally Owned Address (EOA)”
+- Starknet has account abstraction built into the protocol, so there is no such thing as an “Externally Owned Address (EOA)”
 
 The last point may cause some confusion for developers coming from EVM compatible chains, but don’t worry, we will explore this in great detail later.
 
 ## Account Creation on Starknet
 
-To understand the lifecycle of account creation on Starknet, you can create a wallet using [Ready](https://www.ready.co/) (formerly Argent) or [Braavos](https://braavos.app/download-braavos-wallet/) wallet. The video below shows the process of creating a Ready wallet using the browser extension.
+To understand the lifecycle of account creation on Starknet, you can create a wallet using [Ready](https://chromewebstore.google.com/detail/ready-wallet-formerly-arg/dlcobpjiigpikoobohmabehhmhfoodbb) (formerly Argent) or [Braavos](https://braavos.app/download-braavos-wallet/) wallet. The video below shows the process of creating a Ready wallet using the browser extension.
 
 <video src="Cairo%20for%20Solidity%20Developers%20%F0%9F%90%BA%F0%9F%84%B4/143145.mp4" type="video/mp4" autoplay loop muted controls></video>
 
@@ -189,7 +149,9 @@ To start transacting, we need STRK tokens to cover gas fees. Go to the [Starknet
 
 ### Initializing an account method 1: Send a transaction
 
-A Starknet account is initialized by sending its first transaction. Let’s send 1 STRK to ourselves from the wallet:
+A Starknet account is initialized by sending its first transaction. Unlike Ethereum, where Externally Owned Accounts (EOAs) exist as simple public-private key pairs without on-chain contract code, Starknet accounts are smart contracts. However, these account contracts aren't deployed by default when you generate your wallet address. One way to deploy them is by sending your first transaction. At that point, Starknet automatically deploys the account contract and executes your transaction in a single step.
+
+Let’s send 1 STRK to ourselves from the wallet to initiate this:
 
 <video src="Cairo%20for%20Solidity%20Developers%20%F0%9F%90%BA%F0%9F%84%B4/Create334.mp4" type="video/mp4" autoplay loop muted controls></video>
 
@@ -225,7 +187,7 @@ It is not possible for your “wallet” (the off-chain software) to “own” a
 
 ## Beware of older Cairo versions
 
-At the time of writing, the current Cairo version is `2.12.0`. Be aware that internet searches and LLM queries often return code written for Cairo 1.x or earlier versions (0.x), which are incompatible with Cairo 2.x. The syntax has changed significantly between versions, so code from older versions will not work. Always check the Cairo version when copying code examples.
+At the time of writing, the current Cairo version is `2.13.1`. Be aware that internet searches and LLM queries often return code written for Cairo 1.x or earlier versions (0.x), which are incompatible with Cairo 2.x. The syntax has changed significantly between versions, so code from older versions will not work. Always check the Cairo version when copying code examples.
 
 ## Prompting techniques if you get stuck
 
