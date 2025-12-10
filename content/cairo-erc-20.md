@@ -185,9 +185,9 @@ pub enum Event {
 // Event emitted whenever tokens are transferred between addresses
 #[derive(Drop, starknet::Event)]
 pub struct Transfer {
-    #[key]  // Indexed field - can be filtered when querying events
+    #[key]  // Indexed field (can be filtered when querying events)
     from: ContractAddress,     // Address sending the tokens
-    #[key]  // Indexed field - can be filtered when querying events
+    #[key]  // Indexed field (can be filtered when querying events)
     to: ContractAddress,       // Address receiving the tokens
     amount: u256,              // Number of tokens transferred
 }
@@ -195,9 +195,9 @@ pub struct Transfer {
 // Event emitted when an owner approves a spender to use their tokens
 #[derive(Drop, starknet::Event)]
 pub struct Approval {
-    #[key]  // Indexed field - can be filtered when querying events
+    #[key]  // Indexed field (can be filtered when querying events)
     owner: ContractAddress,    // Address that owns the tokens
-    #[key]  // Indexed field - can be filtered when querying events
+    #[key]  // Indexed field (can be filtered when querying events)
     spender: ContractAddress,  // Address approved to spend the tokens
     value: u256,               // Amount approved for spending
 }
@@ -395,15 +395,13 @@ The `IERC20Dispatcher` and `IERC20DispatcherTrait` dispatchers allow us to call 
 
 The `deploy_contract` function declares the contract class, passes the owner address to the constructor via `constructor_args`, and returns the deployed contract's address for us to interact with.
 
-Since each test requires a contract deployment, define an `OWNER()` helper function to generate a consistent test owner address instead of creating a new one each time:
+Since each test requires a contract deployment, define an `OWNER` constant to provide a consistent test owner address instead of creating a new one each time:
 
 ```rust
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
 ```
 
-This way, each test can simply call `deploy_contract("ERC20", OWNER())` to deploy the contract with a consistent owner address.
+This way, each test can simply call `deploy_contract("ERC20", OWNER)` to deploy the contract with a consistent owner address.
 
 ### Testing Constructor Initialization
 
@@ -424,16 +422,13 @@ fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
     contract_address
 }
 
-// helper function to create a test owner address
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
 
 // NEWLY ADDED BELOW
 #[test]
 fn test_token_constructor() {
     // Deploy the ERC20 contract with OWNER as the owner
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
 
     // Create a dispatcher to interact with the deployed contract
     let erc20_token = IERC20Dispatcher { contract_address };
@@ -690,7 +685,6 @@ use snforge_std::{
 use erc20::IERC20Dispatcher;
 use erc20::IERC20DispatcherTrait;
 
-// Helper function to deploy the ERC20 contract with a specified owner
 fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
     let contract = declare(name).unwrap().contract_class();
     let constructor_args = array![owner.into()];
@@ -698,16 +692,11 @@ fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
     contract_address
 }
 
-// Helper function to create a test owner address
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
 
 // NEWLY ADDED
-// Helper function to create a test recipient address
-fn TOKEN_RECIPIENT() -> ContractAddress {
-    'RECIPIENT'.try_into().unwrap()
-}
+// Test recipient address constant
+const TOKEN_RECIPIENT: ContractAddress = 'RECIPIENT'.try_into().unwrap();
 ```
 
 Now write the test:
@@ -716,7 +705,7 @@ Now write the test:
 #[test]
 fn test_total_supply() {
     // Deploy the contract
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
 
     // Create dispatcher to interact with the contract
     let erc20_token = IERC20Dispatcher { contract_address };
@@ -726,8 +715,8 @@ fn test_total_supply() {
     let mint_amount = 1000 * token_decimal.into();
 
     // Impersonate the owner for the next function call (mint)
-    cheat_caller_address(contract_address, OWNER(), CheatSpan::TargetCalls(1));
-    erc20_token.mint(TOKEN_RECIPIENT(), mint_amount);
+    cheat_caller_address(contract_address, OWNER, CheatSpan::TargetCalls(1));
+    erc20_token.mint(TOKEN_RECIPIENT, mint_amount);
 
     // Get the total supply
     let supply = erc20_token.total_supply();
@@ -863,7 +852,7 @@ Now here's the test:
 #[test]
 fn test_transfer() {
     // Deploy the contract
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     // Get token decimals for proper amount calculation
@@ -874,30 +863,30 @@ fn test_transfer() {
     let amount_to_transfer: u256 = 5000 * token_decimal.into();
 
     // Start impersonating the owner for multiple calls
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint tokens to the owner
-    erc20_token.mint(OWNER(), amount_to_mint);
+    erc20_token.mint(OWNER, amount_to_mint);
 
     // Verify the mint was successful
-    assert(erc20_token.balance_of(OWNER()) == amount_to_mint, 'Incorrect minted amount');
+    assert(erc20_token.balance_of(OWNER) == amount_to_mint, 'Incorrect minted amount');
 
     // Track recipient's balance before transfer
-    let receiver_previous_balance = erc20_token.balance_of(TOKEN_RECIPIENT());
+    let receiver_previous_balance = erc20_token.balance_of(TOKEN_RECIPIENT);
 
     // Transfer tokens from owner to recipient
-    erc20_token.transfer(TOKEN_RECIPIENT(), amount_to_transfer);
+    erc20_token.transfer(TOKEN_RECIPIENT, amount_to_transfer);
 
     // Stop impersonating the owner
     stop_cheat_caller_address(contract_address);
 
     // Verify sender's balance decreased correctly
-    assert(erc20_token.balance_of(OWNER()) < amount_to_mint, 'Sender balance not reduced');
-    assert(erc20_token.balance_of(OWNER()) == amount_to_mint - amount_to_transfer, 'Wrong sender balance');
+    assert(erc20_token.balance_of(OWNER) < amount_to_mint, 'Sender balance not reduced');
+    assert(erc20_token.balance_of(OWNER) == amount_to_mint - amount_to_transfer, 'Wrong sender balance');
 
     // Verify recipient's balance increased correctly
-    assert(erc20_token.balance_of(TOKEN_RECIPIENT()) > receiver_previous_balance, 'Recipient balance unchanged');
-    assert(erc20_token.balance_of(TOKEN_RECIPIENT()) == amount_to_transfer, 'Wrong recipient amount');
+    assert(erc20_token.balance_of(TOKEN_RECIPIENT) > receiver_previous_balance, 'Recipient balance unchanged');
+    assert(erc20_token.balance_of(TOKEN_RECIPIENT) == amount_to_transfer, 'Wrong recipient amount');
 }
 ```
 
@@ -914,7 +903,7 @@ Let's test that `transfer` properly rejects attempts to transfer more tokens tha
 Modify the `transfer` call in our test to attempt transferring 11,000 tokens instead of 5000:
 
 ```rust
- erc20_token.transfer(TOKEN_RECIPIENT(), 11000 * token_decimal.into());
+ erc20_token.transfer(TOKEN_RECIPIENT, 11000 * token_decimal.into());
 ```
 
 When we run `scarb test test_transfer`, the test should fail with this error:
@@ -935,7 +924,7 @@ Instead of modifying the existing test, add this test using `#[should_panic]` to
 #[should_panic(expected: ('Insufficient amount',))]
 fn test_transfer_insufficient_balance() {
     // Deploy the contract
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -945,17 +934,17 @@ fn test_transfer_insufficient_balance() {
     let transfer_amount: u256 = 10000 * token_decimal.into();
 
     // Start impersonating the owner
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint only 5,000 tokens to the owner
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
     // Verify the mint was successful
-    assert(erc20_token.balance_of(OWNER()) == mint_amount, 'Mint failed');
+    assert(erc20_token.balance_of(OWNER) == mint_amount, 'Mint failed');
 
     // Attempt to transfer more than balance (10,000 tokens when only 5,000 exist)
     // This should panic with 'Insufficient amount'
-    erc20_token.transfer(TOKEN_RECIPIENT(), transfer_amount);
+    erc20_token.transfer(TOKEN_RECIPIENT, transfer_amount);
 
     // Stop impersonating the owner
     stop_cheat_caller_address(contract_address);
@@ -1050,7 +1039,7 @@ Let's test that the `approve` function correctly sets the allowance and that it 
 ```rust
 #[test]
 fn test_approve() {
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -1058,23 +1047,23 @@ fn test_approve() {
     let approval_amount: u256 = 5000 * token_decimal.into();
 
     // Start impersonating the owner
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint tokens to the owner first
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
     // Verify mint succeeded
-    assert(erc20_token.balance_of(OWNER()) == mint_amount, 'Mint failed');
+    assert(erc20_token.balance_of(OWNER) == mint_amount, 'Mint failed');
 
     // Owner approves the recipient to spend tokens
-    erc20_token.approve(TOKEN_RECIPIENT(), approval_amount);
+    erc20_token.approve(TOKEN_RECIPIENT, approval_amount);
 
     // Stop impersonating the owner
     stop_cheat_caller_address(contract_address);
 
     // Verify the allowance was set
-    assert(erc20_token.allowance(OWNER(), TOKEN_RECIPIENT()) > 0, 'Incorrect allowance');
-    assert(erc20_token.allowance(OWNER(), TOKEN_RECIPIENT()) == approval_amount, 'Wrong allowance amount');
+    assert(erc20_token.allowance(OWNER, TOKEN_RECIPIENT) > 0, 'Incorrect allowance');
+    assert(erc20_token.allowance(OWNER, TOKEN_RECIPIENT) == approval_amount, 'Wrong allowance amount');
 }
 ```
 
@@ -1084,11 +1073,11 @@ First, the test mints 10,000 tokens to the owner and verifies the mint succeeded
 
 Add the test to your `test_contract.cairo` file, then run `scarb test test_approve` to verify that it passes.
 
-### Implementing delegated transfers:`transfer_from`
+### Implementing delegated transfers: `transfer_from`
 
 Now, let’s implement `transfer_from` which moves tokens from one address to another using pre-approved spending permissions.
 
-Update the interface to include ****the function signature:
+Update the interface to include the function signature:
 
 ```rust
 #[starknet::interface]
@@ -1160,7 +1149,7 @@ Since the spender uses their approval to move tokens from the owner's account to
 #[test]
 fn test_transfer_from() {
     // Deploy the contract
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -1170,13 +1159,13 @@ fn test_transfer_from() {
     let transfer_amount: u256 = 5000 * token_decimal.into();
 
     // Start impersonating the owner
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint tokens to the owner
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
     // Verify mint succeeded
-    assert(erc20_token.balance_of(OWNER()) == mint_amount, 'Mint failed');
+    assert(erc20_token.balance_of(OWNER) == mint_amount, 'Mint failed');
 
     let spender:ContractAddress = 'SPENDER'.try_into().unwrap();
 
@@ -1187,25 +1176,25 @@ fn test_transfer_from() {
     stop_cheat_caller_address(contract_address);
 
     // Verify the allowance was set correctly
-    assert(erc20_token.allowance(OWNER(), spender) == transfer_amount, 'Approval failed');
+    assert(erc20_token.allowance(OWNER, spender) == transfer_amount, 'Approval failed');
 
     // Track balances before transfer
-    let owner_balance_before = erc20_token.balance_of(OWNER());
-    let recipient_balance_before = erc20_token.balance_of(TOKEN_RECIPIENT());
-    let allowance_before = erc20_token.allowance(OWNER(), spender);
+    let owner_balance_before = erc20_token.balance_of(OWNER);
+    let recipient_balance_before = erc20_token.balance_of(TOKEN_RECIPIENT);
+    let allowance_before = erc20_token.allowance(OWNER, spender);
 
     // Now impersonate the SPENDER to call transfer_from
     cheat_caller_address(contract_address, spender, CheatSpan::TargetCalls(1));
-    erc20_token.transfer_from(OWNER(), TOKEN_RECIPIENT(), transfer_amount);
+    erc20_token.transfer_from(OWNER, TOKEN_RECIPIENT, transfer_amount);
 
     // Verify owner's balance decreased
-    assert(erc20_token.balance_of(OWNER()) == owner_balance_before - transfer_amount, 'Owner balance wrong');
+    assert(erc20_token.balance_of(OWNER) == owner_balance_before - transfer_amount, 'Owner balance wrong');
 
     // Verify recipient's balance increased
-    assert(erc20_token.balance_of(TOKEN_RECIPIENT()) == recipient_balance_before + transfer_amount, 'Recipient balance wrong');
+    assert(erc20_token.balance_of(TOKEN_RECIPIENT) == recipient_balance_before + transfer_amount, 'Recipient balance wrong');
 
     // Verify allowance decreased
-    assert(erc20_token.allowance(OWNER(), spender) == allowance_before - transfer_amount, 'Allowance not reduced');
+    assert(erc20_token.allowance(OWNER, spender) == allowance_before - transfer_amount, 'Allowance not reduced');
 }
 ```
 
@@ -1216,7 +1205,7 @@ Next, the test captures the current state: the owner's balance, recipient's bala
 ```rust
 // Now impersonate the SPENDER to call transfer_from
 cheat_caller_address(contract_address, spender, CheatSpan::TargetCalls(1));
-erc20_token.transfer_from(OWNER(), TOKEN_RECIPIENT(), transfer_amount);
+erc20_token.transfer_from(OWNER, TOKEN_RECIPIENT, transfer_amount);
 ```
 
 The final assertions verify three updates: the owner's balance decreased by 5,000, the recipient's balance increased by 5,000, and the spender's allowance was reduced by 5,000. These checks confirm that `transfer_from` correctly handles delegated transfers and properly updates allowances.
@@ -1230,9 +1219,9 @@ Let's test that `transfer_from` properly rejects attempts to spend more than the
 Modify the `transfer_from` call in our test to attempt transferring 6,000 tokens instead of the approved 5,000:
 
 ```rust
-*// Attempt to transfer more than approved (6,000 instead of 5,000)*
+// Attempt to transfer more than approved (6,000 instead of 5,000)
 cheat_caller_address(contract_address, spender, CheatSpan::TargetCalls(1));
-erc20_token.transfer_from(OWNER(), TOKEN_RECIPIENT(), 6000 * token_decimal.into());
+erc20_token.transfer_from(OWNER, TOKEN_RECIPIENT, 6000 * token_decimal.into());
 ```
 
 When we run `scarb test test_transfer_from`, the test should fail with this error:
@@ -1252,7 +1241,7 @@ Instead of modifying the existing test, we can create a separate test that expec
 #[should_panic(expected: ('amount exceeds allowance',))]
 fn test_transfer_from_insufficient_allowance() {
     // Deploy the contract
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -1262,10 +1251,10 @@ fn test_transfer_from_insufficient_allowance() {
     let approval_amount: u256 = 5000 * token_decimal.into();
 
     // Start impersonating the owner
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint tokens to the owner
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
     let spender: ContractAddress = 'SPENDER'.try_into().unwrap();
 
@@ -1278,7 +1267,7 @@ fn test_transfer_from_insufficient_allowance() {
     // Attempt to transfer more than approved (6,000 instead of 5,000)
     // This should panic with 'amount exceeds allowance'
     cheat_caller_address(contract_address, spender, CheatSpan::TargetCalls(1));
-    erc20_token.transfer_from(OWNER(), TOKEN_RECIPIENT(), 6000 * token_decimal.into());
+    erc20_token.transfer_from(OWNER, TOKEN_RECIPIENT, 6000 * token_decimal.into());
 }
 ```
 
@@ -1293,7 +1282,7 @@ We can also test the case where a spender has sufficient allowance but the owner
 #[should_panic(expected: ('amount exceeds balance',))]
 fn test_transfer_from_insufficient_balance() {
     // Deploy the contract
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -1304,10 +1293,10 @@ fn test_transfer_from_insufficient_balance() {
     let transfer_amount: u256 = 2000 * token_decimal.into();
 
     // Start impersonating the owner
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint only 1,000 tokens to the owner
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
     let spender: ContractAddress = 'SPENDER'.try_into().unwrap();
 
@@ -1320,7 +1309,7 @@ fn test_transfer_from_insufficient_balance() {
     // Spender has sufficient allowance but owner doesn't have enough balance
     // This should panic with 'amount exceeds balance'
     cheat_caller_address(contract_address, spender, CheatSpan::TargetCalls(1));
-    erc20_token.transfer_from(OWNER(), TOKEN_RECIPIENT(), transfer_amount);
+    erc20_token.transfer_from(OWNER, TOKEN_RECIPIENT, transfer_amount);
 }
 ```
 
@@ -1525,17 +1514,12 @@ fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
     contract_address
 }
 
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
-
-fn TOKEN_RECIPIENT() -> ContractAddress {
-    'TOKEN_RECIPIENT'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
+const TOKEN_RECIPIENT: ContractAddress = 'RECIPIENT'.try_into().unwrap();
 
 #[test]
 fn test_token_constructor() {
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
 
     let erc20_token = IERC20Dispatcher { contract_address };
 
@@ -1550,7 +1534,7 @@ fn test_token_constructor() {
 
 #[test]
 fn test_total_supply() {
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
 
     let erc20_token = IERC20Dispatcher { contract_address };
 
@@ -1558,8 +1542,8 @@ fn test_total_supply() {
     let mint_amount = 1000 * token_decimal.into();
 
     // cheat caller address to be the owner
-    cheat_caller_address(contract_address, OWNER(), CheatSpan::TargetCalls(1));
-    erc20_token.mint(TOKEN_RECIPIENT(), mint_amount);
+    cheat_caller_address(contract_address, OWNER, CheatSpan::TargetCalls(1));
+    erc20_token.mint(TOKEN_RECIPIENT, mint_amount);
 
     let supply = erc20_token.total_supply();
 
@@ -1568,7 +1552,7 @@ fn test_total_supply() {
 
 #[test]
 fn test_transfer() {
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -1577,29 +1561,29 @@ fn test_transfer() {
     let amount_to_transfer: u256 = 5000 * token_decimal.into();
 
     // Start impersonating the owner for multiple calls
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
-    erc20_token.mint(OWNER(), amount_to_mint);
+    erc20_token.mint(OWNER, amount_to_mint);
 
-    assert(erc20_token.balance_of(OWNER()) == amount_to_mint, 'Incorrect minted amount');
+    assert(erc20_token.balance_of(OWNER) == amount_to_mint, 'Incorrect minted amount');
 
-    let receiver_previous_balance = erc20_token.balance_of(TOKEN_RECIPIENT());
-    erc20_token.transfer(TOKEN_RECIPIENT(), amount_to_transfer);
+    let receiver_previous_balance = erc20_token.balance_of(TOKEN_RECIPIENT);
+    erc20_token.transfer(TOKEN_RECIPIENT, amount_to_transfer);
 
     stop_cheat_caller_address(contract_address);
 
-    assert(erc20_token.balance_of(OWNER()) < amount_to_mint, 'Sender balance not reduced');
+    assert(erc20_token.balance_of(OWNER) < amount_to_mint, 'Sender balance not reduced');
     assert(
-        erc20_token.balance_of(OWNER()) == amount_to_mint - amount_to_transfer,
+        erc20_token.balance_of(OWNER) == amount_to_mint - amount_to_transfer,
         'Wrong sender balance',
     );
 
     assert(
-        erc20_token.balance_of(TOKEN_RECIPIENT()) > receiver_previous_balance,
+        erc20_token.balance_of(TOKEN_RECIPIENT) > receiver_previous_balance,
         'Recipient balance unchanged',
     );
     assert(
-        erc20_token.balance_of(TOKEN_RECIPIENT()) == amount_to_transfer, 'Wrong recipient amount',
+        erc20_token.balance_of(TOKEN_RECIPIENT) == amount_to_transfer, 'Wrong recipient amount',
     );
 }
 
@@ -1607,7 +1591,7 @@ fn test_transfer() {
 #[should_panic(expected: ('Insufficient amount',))]
 fn test_transfer_insufficient_balance() {
     // Deploy the contract
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -1617,17 +1601,17 @@ fn test_transfer_insufficient_balance() {
     let transfer_amount: u256 = 10000 * token_decimal.into();
 
     // Start impersonating the owner
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint only 5,000 tokens to the owner
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
     // Verify the mint was successful
-    assert(erc20_token.balance_of(OWNER()) == mint_amount, 'Mint failed');
+    assert(erc20_token.balance_of(OWNER) == mint_amount, 'Mint failed');
 
     // Attempt to transfer more than balance (10,000 tokens when only 5,000 exist)
     // This should panic with 'Insufficient amount'
-    erc20_token.transfer(TOKEN_RECIPIENT(), transfer_amount);
+    erc20_token.transfer(TOKEN_RECIPIENT, transfer_amount);
 
     // Stop impersonating the owner
     stop_cheat_caller_address(contract_address);
@@ -1635,7 +1619,7 @@ fn test_transfer_insufficient_balance() {
 
 #[test]
 fn test_approve() {
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -1643,66 +1627,66 @@ fn test_approve() {
     let approval_amount: u256 = 5000 * token_decimal.into();
 
     // Start impersonating the owner
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint tokens to the owner first
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
     // Verify mint succeeded
-    assert(erc20_token.balance_of(OWNER()) == mint_amount, 'Mint failed');
+    assert(erc20_token.balance_of(OWNER) == mint_amount, 'Mint failed');
 
     // Owner approves the recipient to spend tokens
-    erc20_token.approve(TOKEN_RECIPIENT(), approval_amount);
+    erc20_token.approve(TOKEN_RECIPIENT, approval_amount);
 
     // Stop impersonating the owner
     stop_cheat_caller_address(contract_address);
 
     // Verify the allowance was set
-    assert(erc20_token.allowance(OWNER(), TOKEN_RECIPIENT()) > 0, 'Incorrect allowance');
-    assert(erc20_token.allowance(OWNER(), TOKEN_RECIPIENT()) == approval_amount, 'Wrong allowance amount');
+    assert(erc20_token.allowance(OWNER, TOKEN_RECIPIENT) > 0, 'Incorrect allowance');
+    assert(erc20_token.allowance(OWNER, TOKEN_RECIPIENT) == approval_amount, 'Wrong allowance amount');
 }
 
 #[test]
 fn test_transfer_from() {
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
     let mint_amount: u256 = 10000 * token_decimal.into();
     let transfer_amount: u256 = 5000 * token_decimal.into();
 
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
-    assert(erc20_token.balance_of(OWNER()) == mint_amount, 'Mint failed');
+    assert(erc20_token.balance_of(OWNER) == mint_amount, 'Mint failed');
 
     let spender: ContractAddress = 'SPENDER'.try_into().unwrap();
     erc20_token.approve(spender, transfer_amount);
 
     stop_cheat_caller_address(contract_address);
 
-    assert(erc20_token.allowance(OWNER(), spender) == transfer_amount, 'Approval failed');
+    assert(erc20_token.allowance(OWNER, spender) == transfer_amount, 'Approval failed');
 
-    let owner_balance_before = erc20_token.balance_of(OWNER());
-    let recipient_balance_before = erc20_token.balance_of(TOKEN_RECIPIENT());
-    let allowance_before = erc20_token.allowance(OWNER(), spender);
+    let owner_balance_before = erc20_token.balance_of(OWNER);
+    let recipient_balance_before = erc20_token.balance_of(TOKEN_RECIPIENT);
+    let allowance_before = erc20_token.allowance(OWNER, spender);
 
     cheat_caller_address(contract_address, spender, CheatSpan::TargetCalls(1));
-    erc20_token.transfer_from(OWNER(), TOKEN_RECIPIENT(), 5000 * token_decimal.into());
+    erc20_token.transfer_from(OWNER, TOKEN_RECIPIENT, 5000 * token_decimal.into());
 
     assert(
-        erc20_token.balance_of(OWNER()) == owner_balance_before - transfer_amount,
+        erc20_token.balance_of(OWNER) == owner_balance_before - transfer_amount,
         'Owner balance wrong',
     );
 
     assert(
-        erc20_token.balance_of(TOKEN_RECIPIENT()) == recipient_balance_before + transfer_amount,
+        erc20_token.balance_of(TOKEN_RECIPIENT) == recipient_balance_before + transfer_amount,
         'Recipient balance wrong',
     );
 
     assert(
-        erc20_token.allowance(OWNER(), spender) == allowance_before - transfer_amount,
+        erc20_token.allowance(OWNER, spender) == allowance_before - transfer_amount,
         'Allowance not reduced',
     );
 }
@@ -1711,7 +1695,7 @@ fn test_transfer_from() {
 #[should_panic(expected: ('amount exceeds allowance',))]
 fn test_transfer_from_insufficient_allowance() {
     // Deploy the contract
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -1721,10 +1705,10 @@ fn test_transfer_from_insufficient_allowance() {
     let approval_amount: u256 = 5000 * token_decimal.into();
 
     // Start impersonating the owner
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint tokens to the owner
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
     let spender: ContractAddress = 'SPENDER'.try_into().unwrap();
 
@@ -1737,14 +1721,14 @@ fn test_transfer_from_insufficient_allowance() {
     // Attempt to transfer more than approved (6,000 instead of 5,000)
     // This should panic with 'amount exceeds allowance'
     cheat_caller_address(contract_address, spender, CheatSpan::TargetCalls(1));
-    erc20_token.transfer_from(OWNER(), TOKEN_RECIPIENT(), 6000 * token_decimal.into());
+    erc20_token.transfer_from(OWNER, TOKEN_RECIPIENT, 6000 * token_decimal.into());
 }
 
 #[test]
 #[should_panic(expected: ('amount exceeds balance',))]
 fn test_transfer_from_insufficient_balance() {
     // Deploy the contract
-    let contract_address = deploy_contract("ERC20", OWNER());
+    let contract_address = deploy_contract("ERC20", OWNER);
     let erc20_token = IERC20Dispatcher { contract_address };
 
     let token_decimal = erc20_token.decimals();
@@ -1755,10 +1739,10 @@ fn test_transfer_from_insufficient_balance() {
     let transfer_amount: u256 = 2000 * token_decimal.into();
 
     // Start impersonating the owner
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Mint only 1,000 tokens to the owner
-    erc20_token.mint(OWNER(), mint_amount);
+    erc20_token.mint(OWNER, mint_amount);
 
     let spender: ContractAddress = 'SPENDER'.try_into().unwrap();
 
@@ -1771,7 +1755,7 @@ fn test_transfer_from_insufficient_balance() {
     // Spender has sufficient allowance but owner doesn't have enough balance
     // This should panic with 'amount exceeds balance'
     cheat_caller_address(contract_address, spender, CheatSpan::TargetCalls(1));
-    erc20_token.transfer_from(OWNER(), TOKEN_RECIPIENT(), transfer_amount);
+    erc20_token.transfer_from(OWNER, TOKEN_RECIPIENT, transfer_amount);
 }
 ```
 
@@ -1793,6 +1777,6 @@ Once done, run `scarb test test_mint` to verify it works.
 
 This tutorial covered building and testing an ERC-20 token contract on Starknet. From here, the contract can be extended with features like pausing, access controls, and so on.
 
-Alternatively, OpenZeppelin's pre-built components for Cairo can be used instead of building everything from scratch. See the "Component 2[LINK]" chapter to learn how to integrate OpenZeppelin's ERC20, Ownable, and Pausable components into a contract.
+Alternatively, OpenZeppelin's pre-built components for Cairo can be used instead of building everything from scratch. See the "Component 2" chapter to learn how to integrate OpenZeppelin's ERC20, Ownable, and Pausable components into a contract.
 
 *This article is part of a tutorial series on [Cairo Programming on Starknet](https://rareskills.io/cairo-tutorial)*
