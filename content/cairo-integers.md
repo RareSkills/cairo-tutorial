@@ -31,6 +31,7 @@ mod Add {
         }
     }
 }
+
 ```
 
 Cairo also supports signed integers of the following type:
@@ -68,9 +69,10 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
-Remove the automatically created tests and add the following code below. Note the `#[should_panic]` macro above the function specifies the test passes if the execution panics.
+Remove the automatically created tests and add the following code below. Note that the `#[should_panic]` macro above the function specifies the test passes if the execution panics.
 
 ```rust
 use snforge_std::{ContractClassTrait, DeclareResultTrait, declare};
@@ -92,6 +94,7 @@ fn test_flow_protection() {
 
     dispatcher.underflow(0, 1);
 }
+
 ```
 
 Run the tests with `scarb test` and note that the test passes.
@@ -126,7 +129,8 @@ To perform a cast that always succeeds, use `.into()`
 
 ```rust
 let small: u8 = 7;
-let large: u16 = small.into();  *// Always succeeds - u16 can hold any u8 value*
+let large: u16 = small.into(); // Always succeeds - u16 can hold any u8 value
+
 ```
 
 ### Casting that may fail
@@ -139,13 +143,26 @@ Here is the code snippet for a cast that may fail:
 // may fail if value is too large
 let large: u16 = 300;
 let small: u8 = large.try_into().unwrap();  // Panics! 300 > 255
+
 ```
+
+The code above panics because the value `300` does not fit into a `u8`, which can only store values up to `255`. For now, just remember that `unwrap()` method extracts the value out of a “wrapper” type (*discussed in the next sub-section*). If the wrapper contains an error instead of a valid value, `unwrap()` will panic.
 
 Note that if you try to use the `into()` cast in a situation where the cast can fail (casting from  large to small type), the code will not compile.
 
 ### Detecting if a cast will fail
 
-When converting between integer types using `try_into()`, the conversion returns an `Option`. This allows us to safely check whether the cast succeeded before using the result. A common and idiomatic way to do this is by using an `if let` or checking `.is_some()`:
+When converting between integer types using `try_into()`, the result may or may not fit into the target type. Because of this, the conversion returns an `Option` (*an example of a “wrapper” type*), which is Cairo’s way of saying *“this might succeed, or it might fail.”*
+
+- If the conversion works, you get `Option::Some(value)`.
+- If it doesn’t fit, you get `Option::None`.
+
+This forces us to handle the possible failure safely before using the value. Two common ways to do this are:
+
+- using the `.is_some()` method which returns bool indicating whether the option has some value or not.
+- using `if let`.
+
+Using `.is_some()` method:
 
 ```rust
 // Value 300 cannot fit into u8 (max 255), so try_into returns None
@@ -157,6 +174,7 @@ if result_option.is_some() {
 } else {
 	// cast failed
 }
+
 ```
 
 Using `if let`:
@@ -167,6 +185,7 @@ if let Some(result) = result_option {
 } else {
     // cast failed
 }
+
 ```
 
 ## Constants
@@ -174,7 +193,8 @@ if let Some(result) = result_option {
 Constants in Cairo are values that are known at compile time and cannot be changed at runtime. They are declared inside the mod block using the `const` keyword and must have their type explicitly specified, like so:
 
 ```rust
-const <*variable_name*>: <variable_*type*> = <*value*>;
+const <NAME>: <Type> = <value>;
+
 ```
 
 Here's how to declare and use constants in Cairo:
@@ -202,6 +222,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 ### Constants vs Immutables
@@ -230,7 +251,10 @@ mod HelloStarknet {
 }
 ```
 
-Most of the time Cairo is able to determine types on its own, but when using `Bounded::MAX` the compiler won’t automatically know which integer type you need the max for. Hence, the variable needs an explicit type annotation, which is the `u256` after `:` i.e. `let max_u256: u256 = Bounded::MAX;`.
+In the above code, the contract first imports the Bounded trait, which provides access to numeric constants: `MIN` and `MAX` . The 
+`MAX` returns you maximum value allowed for the type. Inside the `max_demo()` function, we use `Bounded::MAX` to retrieve the maximum value of the `u256` type.
+
+Most of the time, Cairo is able to determine types on its own, but when using `Bounded::MAX` the compiler won’t automatically know which integer type you need the max for. Hence, the variable needs an explicit type annotation, which is the `u256` after `:` i.e. `let max_u256: u256 = Bounded::MAX;`.
 
 ## Min integer sizes
 
@@ -282,6 +306,7 @@ let min_i16: i16 = Bounded::MIN;   // -32,768
 let min_i32: i32 = Bounded::MIN;   // -2,147,483,648
 let min_i64: i64 = Bounded::MIN;   // -9,223,372,036,854,775,808
 let min_i128: i128 = Bounded::MIN; // a very large negative value
+
 ```
 
 ### Type annotation requirement
@@ -309,6 +334,7 @@ let x: i32 = 10;
 
 // second way
 let y = 10_i32;
+
 ```
 
 Allowing the compiler to infer the type:
@@ -320,6 +346,7 @@ fn hello_world() -> u32 {
 		let x = 10;
 		x
 }
+
 ```
 
 ## Signed integer division overflow
@@ -360,6 +387,7 @@ mod Div {
         }
     }
 }
+
 ```
 
 To prevent a panic from signed division overflow, we need to manually check conditions before performing the operation, like so:
@@ -385,6 +413,7 @@ mod Div {
         }
     }
 }
+
 ```
 
 ## Casting Up Failure
@@ -395,6 +424,7 @@ This Solidity function looks safe but can produce unexpected results:
 function mul(uint8 a, uint8 b) public pure returns (uint256 c) {
     c = a * b;
 }
+
 ```
 
 The issue is that the multiplication `a * b` happens in `uint8` arithmetic first, then the result is cast to `uint256`. If `a * b` overflows the `uint8` range (0-255), the multiplication wraps around before being cast up.
@@ -418,6 +448,7 @@ fn mul(self: @ContractState, a: u8, b: u8) -> u256 {
     let result_u8 = a * b; // Panic if a * b > 255
 		result_u8.into()       // This line never executes if overflow occurs
 }
+
 ```
 
 ### Safe Casting Up
@@ -431,6 +462,7 @@ fn safe_mul(self: @ContractState, a: u8, b: u8) -> u256 {
     let b_wide: u256 = b.into();
     a_wide * b_wide // No overflow possible
 }
+
 ```
 
 ## Exponents
@@ -456,9 +488,10 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
-The `.pow()` method returns a value of the same type as the base, so `x.pow(y)` here produces a value of type (u256).
+The `.pow()` method returns a value of the same type as the base, so `x.pow(y)` here produces a value of type (`u256`).
 
 **Important:** The exponent must be of type `u32` (or `usize` which is a `u32` under the hood in Cairo). The code will not compile if another integer type is used.
 
@@ -473,7 +506,7 @@ let basis_points = 10_000;
 
 ## Scientific Notation Shorthand
 
-In Solidity, a power of 10 can be written with scientific notation such as `10e18`. Cairo does not support this. To write `10e18` in Cairo, use the Pow trait as shown below:
+In Solidity, you can write numbers using scientific notation such as `10e18`, which represents $10 \times 10^{18}$. Cairo does not support this. To write `10e18` in Cairo, use the Pow trait as shown below:
 
 ```rust
 use core::num::traits::Pow;
@@ -497,7 +530,6 @@ Cairo supports standard bitwise operations on integer types:
 let a: u8 = 0b1100; // 12 in decimal
 let b: u8 = 0b1010; // 10 in decimal
 let result = a & b; // 0b1100 & 0b1010 = 0b1000 => 8
-
 ```
 
 **Bitwise OR (`|`):**
@@ -506,7 +538,6 @@ let result = a & b; // 0b1100 & 0b1010 = 0b1000 => 8
 let a: u8 = 0b1100; // 12 in decimal
 let b: u8 = 0b1010; // 10 in decimal
 let result = a | b; // 0b1110 = 14
-
 ```
 
 **Bitwise XOR (`^`):**
@@ -515,7 +546,6 @@ let result = a | b; // 0b1110 = 14
 let a: u8 = 0b1100; // 12 in decimal
 let b: u8 = 0b1010; // 10 in decimal
 let result = a ^ b; // 0b0110 = 6
-
 ```
 
 **Bitwise NOT (`~`):**
@@ -594,7 +624,7 @@ However, because you will see `felt252` frequently in code, it’s worth explain
 
 ### felt252 has no overflow and underflow protection
 
-Unlike Solidity 0.8.0 or higher, Cairo does not bake in overflow and underflow protection for `felt252`. To demonstrate this, create a new project `scarb new numbers`. Then replace the generated code in `lib.cairo` with the following code:
+Unlike Solidity 0.8.0 or higher, Cairo does not built in overflow and underflow protection for `felt252`. To demonstrate this, create a new project `scarb new numbers`. Then replace the generated code in `lib.cairo` with the following code:
 
 ```rust
 #[starknet::interface]
@@ -615,6 +645,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 Replace the test as follows:
@@ -639,12 +670,14 @@ fn test_math_demo() {
     let result = dispatcher.math_demo(0, 1); // 0 - 1
     println!("result: {}", result);
 }
+
 ```
 
 The console will print:
 
 ```rust
 result: 3618502788666131213697322783095070105623107215331596699973092056135872020480
+
 ```
 
 In Solidity lower than 0.8.0, assuming unsigned arithmetic, `0 - 1` results in an underflow. The value then wraps around to the maximum possible `uint256` value. A similar thing happens with `felt252` in Cairo, since it has no overflow or underflow protection. All arithmetic is performed modulo the field prime (`2²⁵¹ + 17 × 2¹⁹² + 1`), so subtracting 1 from 0 returns the largest valid `felt252` value, which looks like a large number.
@@ -657,6 +690,7 @@ If you try to divide a `felt252` by another `felt252` you will get a compilation
 fn math_demo(self: @ContractState, x: felt252, y: felt252) -> felt252 {
     x / y
 }
+
 ```
 
 To *fully* understand why Cairo doesn’t allow for division like this, watch our video on [modular arithmetic](https://www.youtube.com/watch?v=0lEwgX_zKqE).
@@ -682,6 +716,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 The `felt252_div` function doesn't perform regular division. Instead, it:
@@ -694,6 +729,7 @@ Mathematically:
 
 ```rust
 felt252_div(x, y) = x * y^(-1) mod P
+
 ```
 
 Where `y^(-1)` is the modular inverse of `y` in the finite field.
@@ -705,6 +741,7 @@ Attempting `felt252_div(x, 0)` will cause a runtime panic:
 ```rust
 *// This will panic!*
 let result = felt252_div(42, 0);
+
 ```
 
 Always validate your divisor before performing division. A way `felt252_div` ensures `felt252` value cannot be zero is by using `NonZero<felt252>`.
@@ -733,6 +770,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 ## Summary
