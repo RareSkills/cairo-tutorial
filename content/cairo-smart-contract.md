@@ -16,6 +16,7 @@ mod Counter {
         // TODO
     }
 }
+
 ```
 
 The code above includes the following features:
@@ -25,7 +26,7 @@ The code above includes the following features:
 
 ## Adding an “interface” by defining a trait for the Counter contract
 
-An interface defines a set of functions that a contract **must** implement. Interfaces are not mandatory for contracts, but their usage is encouraged.
+In Solidity, an interface defines a set of functions that a contract **must** implement. Interfaces are not mandatory for contracts, but their usage is encouraged.
 
 In Cairo, this same idea is represented using a **trait**, which defines list of functions without providing their implementation. In that sense, a Cairo trait plays the same role as an interface in Solidity.
 
@@ -36,7 +37,7 @@ For now, think of it this way:
 - the trait describes what functions a contract must have,
 - and the annotation (which we will introduce shortly) tells the trait how it should behave, in this case, as a contract interface.
 
-It is not possible to define functions in the `impl` block that are not part of the implemented interface - we will see later another option for defining extra functions.
+It is not possible to implement the functions that are not part of the defined interface - we will see later another option for implementing extra functions.
 
 The code below extends the Counter contract by defining a trait and providing implementations for the functions declared within it:
 
@@ -59,16 +60,17 @@ mod Counter {
         }
     }
 }
+
 ```
 
 This draft adds the following features:
 
 - A public trait, denoted by the `pub` and `trait` keywords.
-- An implementation (`impl`) block provides the actual logic and can only contain function implementations. This block implements the `ICounter` trait. The name of the trait or implementation block can be anything, though it’s common practice to use descriptive names that reflect the contract’s purpose. By convention, Scarb follows the pattern `IContractName` for interfaces and `ContractNameImpl` for the corresponding implementation that defines the public functions.
+- An implementation (`impl`) block contains function implementations. This block implements the `ICounter` trait. The name of the trait or implementation block can be anything, though it’s common practice to use descriptive names that reflect the contract’s purpose. By convention, Scarb follows the pattern `IContractName` for interfaces and `ContractNameImpl` for the corresponding implementation that defines the public functions.
 
 ## Adding storage
 
-Next, we need a place to store the counter value. Cairo contracts can store arbitrary data in their storage.
+Next, we need a place to store the counter value. Since the counter value needs to persist between transactions, it should be stored as part of the contract's state. In Cairo, persistent data is stored **within a single struct named `Storage` that groups all state variables together.**
 
 ```rust
 // Storage traits
@@ -83,15 +85,13 @@ This includes the following features:
 
 - A `use` statement that imports traits required to read from and write to contract storage.
 - A new structure for the contract storage, defined with the `struct` keyword. The struct must be named `Storage`.
-- The actual counter variable inside the storage.
-
-All of the contract’s storage variables have to be defined inside one `struct`.
+- The actual `counter` variable inside the storage.
 
 ## Adding state and logic
 
-After defining storage, our contract needs a way to access and modify it across the function calls. This is where the concept of **contract state** comes in.
+Now that we have storage, our functions need a way to interact with it. In Cairo, the contract state isn't automatically available; it must be passed to functions explicitly as a parameter. 
 
-Contract state refers to the contract’s internal storage. To access this storage within a function, Cairo requires a *state reference*, a parameter that represents the contract’s storage.
+To facilitate this, Cairo uses a state reference, a specific parameter that represents and allows access to the contract’s storage.
 
 There are two ways to define a state reference in Cairo: one that provides read and write access to storage, and another that provides read-only access. Here’s how to use them:
 
@@ -129,6 +129,7 @@ mod Counter {
         }
     }
 }
+
 ```
 
 The changes we've made so far to the contract allows us to interact directly with storage through the contract state. The main changes are as follows:
@@ -184,6 +185,7 @@ mod Counter {
         }
     }
 }
+
 ```
 
 The added annotations are:
@@ -192,13 +194,14 @@ The added annotations are:
 - `#[starknet::contract]` marks a module as a Starknet smart contract.
 - `#[storage]` indicates the structure that defines the contract’s storage layout. A contract must have exactly one storage `struct` with this annotation.
 - `#[abi(embed_v0)]` makes the functions inside the `impl` block part of the contract’s public ABI — like `public` or `external` functions in Solidity. Omitting this annotation makes the functions available only inside this contract.
+    - The `embed_v0` means embed the ABI using version 0 of the ABI format. In `v0`, function selectors are derived only from the function name. The `impl` name is not considered, which means if a contract has different `impl` blocks (implementing different traits) that both define a function with the same name, a name collision will occur. Future versions (like `v1`) may improve this by including more context in selector derivation without breaking backward compatibility.
     - In Cairo, there are no visibility keywords, like Solidity’s `private` or `internal`, to denote a private function. Another way to create private functions is to simply add them outside the `impl` block, with no annotations. An example is shown later in this article.
 
 With these in place, the contract is ready to be compiled, deployed, and called from other contracts or clients.
 
 ## Functions outside the interface
 
-In Cairo, it’s also possible to define public functions outside an interface implementation by marking them with annotation `#[external(v0)]`.
+In Cairo, it’s also possible to define public functions outside an interface implementation by marking them with annotation `#[external(v0)]`. Just like in `#[abi(embed_v0)]`, the `v0` in `#[external(v0)]` means use the ABI version 0.
 
 It’s possible to use both interfaces and annotated external functions in a contract. However, using interfaces is recommended because it allows external contracts to rely on a shared definition when interacting with your contract.
 
@@ -223,7 +226,7 @@ mod HelloStarknet {
     }
 
     #[abi(embed_v0)]
-    impl CounterImpl of super::ICounter<ContractState> {
+    impl CounterImpl of super::IHelloStarknet<ContractState> {
         fn increase_counter(ref self: ContractState, amount: felt252) {
             self.counter.write(self.counter.read() + amount);
         }
@@ -233,7 +236,7 @@ mod HelloStarknet {
         }
     }
 
-		// ********* NEWLY ADDED - START ********* //
+	// ********* NEWLY ADDED - START ********* //
     #[external(v0)]
     fn increase_counter_by_five(ref self: ContractState) {
         self.counter.write(self.counter.read() + get_five());
@@ -244,7 +247,11 @@ mod HelloStarknet {
     }
     // ********* NEWLY ADDED - END ********* //
 }
+
 ```
+
+> *Note that the first parameter of any `public` or `external` function must be a reference to the contract’s state.*
+> 
 
 ## Compiling the contract
 
@@ -272,7 +279,7 @@ To see the test, navigate to `./tests/test_contract.cairo`. Below is a break dow
 
 1. `use starknet::ContractAddress;`
 
-    This imports ContractAddress from `starknet` module.
+    This imports `ContractAddress` from `starknet` module.
 
     - Imports the `ContractAddress` type.
     - This is Starknet’s representation of a contract address and is required whenever interacting with or referencing deployed contracts.
@@ -335,6 +342,7 @@ Run the following command to test:
 
 ```bash
 scarb test
+
 ```
 
 ## Summary of key differences and similarities
@@ -344,7 +352,7 @@ In this article, we have listed multiple similarities between Cairo and Solidity
 - Cairo’s `mod` keyword serves a similar role to Solidity’s `contract` keyword.
 - Cairo’s interfaces are defined using a trait annotated with `#[starknet::interface]`, like Solidity’s `interface`.
 - To create read-only functions in Cairo, like `view` in Solidity, pass the state as a snapshot using the `@` symbol.
-- To create Solidity’s `pure`-like functions in Cairo, define the function like we did with `get_five` function.
+- To create Solidity’s `pure`like functions in Cairo, define the function like we did with `get_five` function.
 - To make a function externally callable, like with `public` and `external` in Solidity, use `#[external(v0)]` or implement it in an `impl` block with `#[abi(embed_v0)]`.
 
 ## Conclusion
