@@ -304,7 +304,7 @@ With this approach, there is no need to manually build an `Array<felt252>` or ca
 
 The `deploy_for_test` function signature:
 
-![An image of deploy_for_test function signature showing its parameters and return type](Constructors%20in%20Cairo/Screenshot_2025-12-07_at_06.54.29.png)
+![An image of deploy_for_test function signature showing its parameters and return type](https://r2media.rareskills.io/CairoConstructor/deployForTest.png)
 
 **`deploy_for_test` function parameters**
 
@@ -354,7 +354,7 @@ deploy_for_test(
 
 **`deploy_for_test` function return type**
 
-![An image showing the return type of deploy_for_test function](Constructors%20in%20Cairo/de3bc561-47d3-4b6f-8fed-c06da4d9fc7d.png)
+![An image showing the return type of deploy_for_test function](https://r2media.rareskills.io/CairoConstructor/deployForTestReturn.png)
 
 In the blue box is the return type. The function returns a `Result`, which can be one of two outcomes:
 
@@ -498,7 +498,7 @@ fn test_increase_balance() {
 
 We will make changes to the highlighted part in this screenshot:
 
-![Screenshot of the test code, highlighting the part we will make changes to](Constructors%20in%20Cairo/Screenshot_2025-12-09_at_21.10.38.png)
+![Screenshot of the test code, highlighting the part we will make changes to](https://r2media.rareskills.io/CairoConstructor/contractAddressHighlight.png)
 
 **The updated test code**
 
