@@ -75,13 +75,13 @@ This article introduces the basics of the Cairo programming language and shows h
     name = "cairo_playground" # HAS TO BE THE NAME OF THE ROOT DIRECTORY
     version = "0.1.0"
     edition = "2024_07"
-    
+
     [cairo]
     enable-gas = false
-    
+
     [dependencies]
     cairo_execute = "2.12.0"
-    
+
     [[target.executable]]
     # A PATH TO THE FUNCTION WITH THE #[executable] ANNOTATION
     # <root-directory>::<file-name>::<function-name>
