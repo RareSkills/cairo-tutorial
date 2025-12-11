@@ -21,6 +21,7 @@ abstract contract C {
 contract D is C {
 
 }
+
 ```
 
 The contract `C` cannot be deployed because it is abstract. However, if `D` is deployed, then `D` will have all the functionality and state of `C`. Specifically, `D` will have public functions `increase_balance()` and `get()` which behave as defined in `C`.
@@ -111,7 +112,7 @@ mod HelloStarknet {
 
 ## The Above Contract Breakdown
 
-### IHelloStarknet Interface
+### `IHelloStarknet` Interface
 
 The trait at the top of the file is unchanged from the one Scarb creates by default.
 
@@ -125,13 +126,14 @@ pub trait IHelloStarknet<TContractState> {
     /// Retrieve contract balance.
     fn get_balance(self: @TContractState) -> felt252;
 }
+
 ```
 
 ### The Counter Component
 
 The `CounterComponent` (*similar to the “abstract contract” in Solidity we saw earlier*) is nearly identical to contract Scarb creates by default. The differences are explained after the code blocks.
 
-CounterComponent:
+**`CounterComponent`**:
 
 ```rust
 #[starknet::component]
@@ -159,6 +161,7 @@ pub mod CounterComponent {
         }
     }
 }
+
 ```
 
 Default contract created by Scarb:
@@ -185,6 +188,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 Here are the differences between the `CounterComponent` and the default contract Scarb generates:
@@ -200,11 +204,11 @@ Here are the differences between the `CounterComponent` and the default contract
 
 Next is a detailed explanation of the differences listed above.
 
-### **`#[starknet::component]` vs `#[starknet::contract]`**
+### `#[starknet::component]` vs `#[starknet::contract]`
 
 If we intend to build a component instead of a contract, the compiler needs to know the type of module. Annotating the `mod` block with `#[starknet::component]` tells the compiler we are building a component, while `[starknet::contract]` tells the compiler we are building a contract.
 
-### **`#[embeddable_as(CounterImplMixin)]`**
+### `#[embeddable_as(CounterImplMixin)]`
 
 This attribute allows a contract to “bring in” an `impl` from the component.
 
@@ -212,6 +216,7 @@ This attribute allows a contract to “bring in” an `impl` from the component.
 // Counter Mixin
 #[abi(embed_v0)]
 impl CounterImpl = CounterComponent::CounterImplMixin<ContractState>;
+
 ```
 
 In the contract: `CounterComponent` refers to the module `CounterComponent` and `CounterImplMixin` refers to the `Impl` it is bringing in (”mixing in”).
@@ -223,9 +228,10 @@ We could have written `#[embeddable_as(FooBar)]` in the component and put the fo
 ```rust
 #[abi(embed_v0)]
 impl CounterImpl = CounterComponent::FooBar<ContractState>;
+
 ```
 
-> *We can define multiple ****`embeddable_as` ****implementations within a component if we want to expose different `impl` blocks for different purposes (we will show an example for this in a follow up article).*
+> *We can define multiple `embeddable_as` implementations within a component if we want to expose different impl blocks for different purposes (we will show an example for this in a follow up article).*
 >
 
 A “Mixin” is not a language construct or a term the compiler recognizes. It’s idiomatic terminology in Cairo for an `impl` that is included in a contract from a component, *and* that `impl` will expose new “public” functions in the contract. A contract could include an `impl` which does not expose any external functions, but this would not be considered a “mixin.”
@@ -235,6 +241,7 @@ The `#[abi(embed_v0)]` in the contract exposes the functions from the counter `i
 ```rust
 // #[abi(embed_v0)] commented out
 impl CounterImpl = CounterComponent::Counter<ContractState>;
+
 ```
 
 Our code would still compile, but there would be no public functions, so the tests wouldn’t pass.
@@ -245,6 +252,7 @@ The `impl` definition in the above component looks like this:
 
 ```rust
 impl CounterImpl<TContractState, +HasComponent<TContractState>> of super::IHelloStarknet<ComponentState<TContractState>>
+
 ```
 
 This looks intimidating at first, especially if you don’t have a Rust background. The good news is that it’s mostly boilerplate, you will reuse this pattern across all components, you won’t have to rewrite it. But we should know what it means.
@@ -253,6 +261,7 @@ In a component, every `impl` follows this structure:
 
 ```rust
 impl {ImplName}<TContractState, +HasComponent<TContractState>> of {PathToTrait}::{TraitName}<ComponentState<TContractState>>
+
 ```
 
 Let’s break that down:
@@ -297,6 +306,7 @@ mod HelloStarknet {
         CounterEvent: CounterComponent::Event,
     }
 }
+
 ```
 
 In Solidity, functions, storage variables, and events are automatically “pulled in” when a contract inherits from an abstract contract. This is not the case in Cairo.
