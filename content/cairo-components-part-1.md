@@ -232,7 +232,7 @@ impl CounterImpl = CounterComponent::FooBar<ContractState>;
 ```
 
 > *We can define multiple `embeddable_as` implementations within a component if we want to expose different impl blocks for different purposes (we will show an example for this in a follow up article).*
-> 
+>
 
 A “Mixin” is not a language construct or a term the compiler recognizes. It’s idiomatic terminology in Cairo for an `impl` that is included in a contract from a component, *and* that `impl` will expose new “public” functions in the contract. A contract could include an `impl` which does not expose any external functions, but this would not be considered a “mixin.”
 
