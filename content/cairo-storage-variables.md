@@ -1,8 +1,13 @@
 # Cairo Storage Variable Types
 
-Before a type can be stored in Cairo contract storage, it must implement a trait called the `starknet::Store` trait. This trait defines how a type is serialized and deserialized in storage. In simple words, it provides the compiler with the logic needed to read and write a “type” to the contract's storage.
+In Starknet, **Contract Storage** is the persistent memory where your smart contract's state lives. Unlike variables declared inside a function which disappear after execution, data in storage remains on the blockchain permanently.
 
-For types such as integers, `bool`, `felt252`, `ByteArray`, and so on, Cairo already provides an implementation of the trait. As a result, these types can be used directly in the contract’s storage without any extra work. For example, in the contract below, both `felt252` and `u256` are valid storage members because they already implement the trait.
+However, simply declaring a variable isn't enough. To interact with contract storage effectively in Cairo, the compiler needs two pieces of logic:
+
+1. **Data Representation:** How to serialize and deserialize the data type for storage. This is handled by the `starknet::Store` trait.
+2. **Access Logic:** How to actually read from or write to the specific storage slot. This is handled by a set of **Access Traits**.
+
+For types such as integers, `bool`, `felt252`, `ByteArray`, and so on, Cairo already provides an implementation of the `starknet::Store` trait. As a result, these types can be used directly in the contract’s storage without any extra work. For example, in the contract below, both `felt252` and `u256` are valid storage members because they already implement the trait.
 
 ```rust
 #[storage]
@@ -14,8 +19,6 @@ struct Storage {
 
 However, when dealing with complex types in storage such as mappings, arrays, or user-defined structs, we must either derive the trait or use a special type provided by Cairo to represent our type in storage. These cases will be discussed in detail in later sections.
 
-While the `starknet::Store` trait allows a type to be used in the contract storage, it doesn’t handle reading or writing values to storage. That responsibility falls to a set of additional traits, which we will refer to as access traits ****in this article.
-
 This article will cover the different types that can be used in storage and the traits each type requires to be used in storage.
 
 ## Storage Access Traits
@@ -24,7 +27,7 @@ Access traits determine how values are read from or written to storage based on 
 
 Here's a quick breakdown of these access traits, we will get into details later:
 
-- `StoragePointerReadAccess` and `StoragePointerWriteAccess`:  Used for reading and writing values to simple types or custom structs that implement `starknet::Store`.
+- `StoragePointerReadAccess` and `StoragePointerWriteAccess`: Used for reading and writing values to simple types or custom structs that implement `starknet::Store`.
 - `StorageMapReadAccess` and `StorageMapWriteAccess`: Handle reading from and writing to mapping (key-value) types in storage.
 - `StoragePathEntry`: Helps resolve access to nested mapping.
 - `VecTrait` and `MutableVecTrait`: Provides access to dynamics array in a storage.
@@ -76,6 +79,7 @@ mod HelloStarknet {
         version_info: (u8, i8) // (unsigned integer, signed integer)
     }
 }
+
 ```
 
 Now that we have seen how different data types can be declared in Cairo’s storage, the next step is understanding how to work with them, that is, how to actually write values into storage and later read them back.
@@ -89,6 +93,7 @@ It is available in the `starknet::storage` module:
 ```rust
 // Import `StoragePointerWriteAccess` trait
 use starknet::storage::StoragePointerWriteAccess;
+
 ```
 
 Here's how to perform write operations on different simple types (*the newly added code are annotated with `/* NEWLY ADDED */` comment*):
@@ -139,6 +144,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 ### Read Operations
@@ -147,6 +153,7 @@ For read operations, we need to import the `StoragePointerReadAccess` trait, whi
 
 ```rust
 use starknet::storage::StoragePointerReadAccess;
+
 ```
 
 Extending the contract from the previous section, the code below imports the `StoragePointerReadAccess` trait and read the value from the state variables (*the newly added code are annotated with `/* NEWLY ADDED */` comment*):
@@ -188,7 +195,7 @@ mod HelloStarknet {
         }
 
         /* NEWLY ADDED */
-        fn read_vars(ref self: ContractState) {
+        fn read_vars(self: @ContractState) {
             // felt252: Reading user ID returns a field element (0 to P-1 range)
             let _ = self.user_id.read();
 
@@ -212,6 +219,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 ## Mapping and Vec
@@ -222,10 +230,11 @@ These special types are available in the `starknet::storage` module, and are use
 
 ```rust
 use starknet::storage::{ Map, Vec };
+
 ```
 
-> *Note that `Map` and `Vec` don’t need to be imported together, you can import only the one you need, depending on your use case. For instance, if your contract only requires mappings, it's fine to import just the `Map` type.*
->
+> Note that `Map` and `Vec` don’t need to be imported together, you can import only the one you need, depending on your use case. For instance, if your contract only requires mappings, it's fine to import just the Map type.
+> 
 
 Once we have imported `Map` and `Vec`, we can then use them inside the storage struct, like so:
 
@@ -240,12 +249,13 @@ struct Storage {
     // uint64[] my_vec;
     my_vec: Vec<u64>,
 }
+
 ```
 
 The equivalent of how we declare both Map and Vec types in Solidity is commented above each declaration in the above code. The `Map` type takes two generic parameters: the `KeyType` and `ValueType`. In our example, `ContractAddress` is the key and `u256` is the value, meaning this map stores a `u256` amount for each address. The `Vec` type, on the other hand, takes a single type and represents an array of elements of that type. In our example, it is an array of 64-bit unsigned integers.
 
-> *Note that there isn't a traditional "fixed array" storage type in Cairo like we have in Solidity and other languages.*
->
+> Note that there isn't a traditional "fixed array" storage type in Cairo like we have in Solidity and other languages.
+> 
 
 With these state variables set up, let’s look at how to interact with them using read and write operations.
 
@@ -271,6 +281,7 @@ mod HelloStarknet {
     };
 
 }
+
 ```
 
 These traits enable the methods like `.write(key, value)` and `.read(key)`, which we will use in the upcoming examples. Without importing them, we wont be able to perform any of these operations on our storage collection.
@@ -283,6 +294,7 @@ We use the `.write(key, value)` method provided by the `StorageMapWriteAccess`. 
 
 ```rust
 self.my_map.write(key, value);
+
 ```
 
 Here’s what each part does:
@@ -313,6 +325,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 This stores the `amount` for the given `user` address. Under the hood, Cairo handles writing this to the appropriate storage slot based on the key.
@@ -323,6 +336,7 @@ We use the `.read(key)` method provided by the `StorageMapReadAccess`. The synta
 
 ```rust
 self.my_map.read(key);
+
 ```
 
 Here's a breakdown of what it does:
@@ -347,6 +361,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 This function reads the value stored for a given `user` address and returns it.
@@ -367,12 +382,14 @@ struct Storage {
     // user_address => token_address => balance
     two_level_mapping: Map<ContractAddress, Map<ContractAddress, u256>>,
 }
+
 ```
 
 **Importing Required Trait**
 
 ```rust
 use starknet::storage::StoragePathEntry;
+
 ```
 
 `StoragePathEntry` enables the `.entry(key)` method to get the storage path to the next key in the sequence.
@@ -432,6 +449,7 @@ mod HelloStarknet {
 
     }
 }
+
 ```
 
 For the read and write operations, both functions use the `.entry()` method twice:
@@ -493,6 +511,7 @@ mod HelloStarknet {
 
     }
 }
+
 ```
 
 For the read and write operations, each function in the code above uses the `.entry(key1)` method once:
@@ -522,13 +541,14 @@ struct Storage {
     // Solidity equivalent: uint64[] my_vec;
     my_vec: Vec<u64>,
 }
+
 ```
 
 But before that, we have two traits associated with Vec type: `VecTrait` and `MutableVecTrait`.
 
 **`VecTrait`** provides read-only methods for interacting with vectors in storage. This includes:
 
-- `.len()` – returns the current number of elements in the vector.
+- `.len()` – returns the current number of elements in the vector. It return type is `u64`.
 - `.get(index)` – safely returns a pointer to the element at the given index. Returns `None` if the index is out of bounds.
 - `.at(index)` – returns a pointer to the element at the given index, but **panics** if the index is invalid.
 
@@ -554,6 +574,7 @@ fn push_number(ref self: ContractState, value: u64) {
     // PUSH OPERATION
     self.my_vec.push(value);
 }
+
 ```
 
 **Reading from an Existing Index**
@@ -568,6 +589,7 @@ fn read_my_vec(self: @ContractState, index: u64) -> u64 {
     // VEC READ OPERATION
     self.my_vec.at(index).read() // Will panic if index is out of bounds
 }
+
 ```
 
 Exercise: Why did we add `StoragePointerReadAccess` trait?
@@ -580,10 +602,11 @@ To update a value at an existing index, we can use `.get()` or `.at()` to get th
 // IMPORT TRAITS
 use starknet::storage::{Vec, MutableVecTrait, StoragePointerWriteAccess};
 
-fn write_my_vec(self: @ContractState, index: u64, val: u64) -> u64 {
+fn write_my_vec(ref self: ContractState, index: u64, val: u64) -> u64 {
     // VEC WRITE OPERATION
     self.my_vec.at(index).write(val) // Will panic if index is out of bounds
 }
+
 ```
 
 **Getting the Vector’s Length**
@@ -598,6 +621,7 @@ fn get_vec_len(self: @ContractState) -> u64 {
     // RETURN VEC LENGTH
     self.my_vec.len()
 }
+
 ```
 
 **Popping the Last Element**
@@ -607,7 +631,7 @@ use starknet::storage::{Vec, MutableVecTrait};
 
 fn pop_last(ref self: ContractState) {
     // POP OPERATION
-    self.my_vec.pop();
+    let _ = self.my_vec.pop();
 }
 ```
 
@@ -628,6 +652,7 @@ struct User {
     name: bytes31,
     is_admin: bool,
 }
+
 ```
 
 Once this is done, the struct can be used in storage-related operations, including inside `#[storage]` struct as type in mappings and arrays.
@@ -682,6 +707,7 @@ mod HelloStarknet {
         }
     }
 }
+
 ```
 
 **Observe that we imported the following traits:**
@@ -691,6 +717,7 @@ use starknet::storage::{
     StoragePointerReadAccess, // Enables .read() on storage paths
     StoragePointerWriteAccess // Enables .write(value) on storage paths
 };
+
 ```
 
 We import these traits because the struct fields are simple types, and without them, calls like `.read()` and `.write(value)` would not compile.
@@ -713,6 +740,7 @@ fn write_struct(
     self.user.is_admin.write(_is_admin); // Write to field 3
 
 }
+
 ```
 
 Each call writes a new value to a specific field in the stored struct. This shows that even though the struct is stored as one object, its fields can be accessed and updated independently.
@@ -731,11 +759,12 @@ fn read_struct(ref self: ContractState) -> (u32, bytes31, bool) {
     (id, name, is_admin)
 
 }
+
 ```
 
 ### Enum Type
 
-Enums follow a similar pattern to structs, we must explicitly derive `starknet::Store` for them to be stored. Each variant type must also implement the `starknet::Store` trait.
+Enums follow a similar pattern to structs, we must explicitly derive `starknet::Store` for them to be stored. Each variant type must also implement the `starknet::Store` trait. In addition, because enums may contain data that requires proper cleanup when values are replaced or dropped, we also need to derive the `Drop` trait.
 
 Here’s a basic example of defining an enum and using it in storage:
 
@@ -743,8 +772,8 @@ Here’s a basic example of defining an enum and using it in storage:
 #[starknet::contract]
 mod HelloStarknet {
 
-        // DEFINE ENUM
-    #[derive(starknet::Store)]
+    // DEFINE ENUM
+    #[derive(starknet::Store, Drop)]
     enum UserRole {
         Admin,
         Mod,
@@ -758,6 +787,7 @@ mod HelloStarknet {
         my_role: UserRole,
     }
 }
+
 ```
 
 In our enum definition, we include the `#[default]` attribute, which is required for any enum that will be used in storage. This attribute marks one of the variants as the default value (in our case, `User` variant) that gets assigned when the storage value has not been set.
@@ -780,10 +810,11 @@ fn write_enum(ref self: ContractState) {
 }
 
 // READ OPERATION
-fn read_enum(ref self: ContractState) {
+fn read_enum(self: @ContractState) {
     // Read the current value of the enum from storage
     let _ = self.my_role.read();
 }
+
 ```
 
 In Cairo, collection types like `Vec` or `Map` cannot be included as fields in struct or as variants in enum because they rely on dynamic memory layouts that the storage system does not support by default.
@@ -805,6 +836,7 @@ enum InvalidUserRole {
     #[default]
     User,
 }
+
 ```
 
 If we need to store collections inside a struct, we have to use a special kind of struct called storage node.
@@ -826,6 +858,7 @@ struct UserStorageNode {
     friends: Vec<ContractAddress>,          // ✅ Now allowed!
     tokenBal: Map<ContractAddress, u256>,   // ✅ Also allowed!
 }
+
 ```
 
 The `#[starknet::storage_node]` attribute allows collection type support and automatically handles the necessary storage logic.
@@ -839,6 +872,7 @@ Once defined, storage nodes can be declared like any other type inside the `#[st
 struct Storage {
     user_data: UserStorageNode,
 }
+
 ```
 
 Next, we will show how to initialize the `user_data` storage variable and also read from it.
@@ -867,6 +901,7 @@ impl HelloStarknetImpl of super::IHelloStarknet<ContractState> {
         self.user_data.tokenBal.write(get_caller_address(), 23);
     }
 }
+
 ```
 
 **Reading from Storage Nodes**
@@ -888,6 +923,7 @@ impl HelloStarknetImpl of super::IHelloStarknet<ContractState> {
         let _ = self.user_data.tokenBal.read(get_caller_address());
     }
 }
+
 ```
 
 **Exercise:** By looking at the read and write operations in storage nodes above, list out the traits needed to perform the following operations:
