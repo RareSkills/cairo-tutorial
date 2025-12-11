@@ -19,57 +19,57 @@ This article introduces the basics of the Cairo programming language and shows h
 ## Setting up the development environment
 
 1. Create an empty directory and navigate into it.
-    
+
     The directory can have any name, in this example, it’s called `cairo_playground`:
-    
+
     ```bash
     mkdir cairo_playground && cd cairo_playground
-    
+
     ```
-    
+
 2. Create a source folder inside the `cairo_playground` directory:
-    
+
     ```bash
     mkdir src
-    
+
     ```
-    
+
 3. Inside the `src` folder, create two files: `playground.cairo` (*name can vary*) and `lib.cairo`:
-    
+
     ```bash
     touch src/playground.cairo && touch src/lib.cairo
-    
+
     ```
-    
+
 4. Add the following content to the new files.
-    
+
     `playground.cairo`:
-    
+
     ```rust
     #[executable]
     fn main() {
         // Print message to terminal.
         println!("Hello from Rareskills!!!");
     }
-    
+
     ```
-    
+
     `lib.cairo`:
-    
+
     ```rust
     mod playground;
     
     ```
-    
+
 5. Create a `Scarb.toml` file in the project root (`cairo_playground`):
-    
+
     ```rust
     touch Scarb.toml
     
     ```
-    
+
     Add the following content:
-    
+
     ```toml
     [package]
     name = "cairo_playground" # HAS TO BE THE NAME OF THE ROOT DIRECTORY
@@ -88,9 +88,9 @@ This article introduces the basics of the Cairo programming language and shows h
     function = "cairo_playground::playground::main"
     
     ```
-    
+
     The `#[executable]` annotation will be explained in a later subsection.
-    
+
 
 After completing the setup, the directory should have a structure similar to this:
 
