@@ -20,8 +20,8 @@ Starknet Foundry's `caller_address` cheatcodes allow us to do this by simulating
 
 | Starknet Foundry `caller_address` cheatcodes | What it does | Solidity Foundry equivalent |
 | --- | --- | --- |
-| `cheat_caller_address(target, caller_address, span)` | Impersonates caller for a target contract, limited by `CheatSpan` | No direct equivalent - Solidity's `vm.prank(caller_address)` affects the next call globally, not target-specific |
-| `start_cheat_caller_address(target, caller_address)` | Starts impersonating caller for a target contract | **N**o direct equivalent - Solidity doesn't have target-specific pranking |
+| `cheat_caller_address(target, caller_address, span)` | Impersonates caller for a target contract, limited by `CheatSpan` | No direct equivalent (Solidity's `vm.prank(caller_address)` affects the next call globally, not target-specific) |
+| `start_cheat_caller_address(target, caller_address)` | Starts impersonating caller for a target contract | **N**o direct equivalent (Solidity doesn't have target-specific pranking) |
 | `start_cheat_caller_address_global(caller_address)` | Starts impersonating caller globally across all contracts which includes the target contract and any contracts it invokes | `vm.startPrank(caller_address)` |
 | `stop_cheat_caller_address(target)` | Stops impersonating caller for a target contract | No direct equivalent |
 | `stop_cheat_caller_address_global()` | Stops global caller impersonation | `vm.stopPrank()` |
@@ -124,7 +124,7 @@ use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, cheat_caller_
 
 To see how `cheat_caller_address` works in practice, we'll create two tests: one that demonstrates the failure case without `cheat_caller_address` cheatcode, and another that shows how to use the cheatcode correctly.
 
-Since the updated `HelloContract` constructor now expects an owner address, we need to provide one when deploying the contract in our tests. We’ll create a `deploy_contract` helper function that takes the owner address as a parameter and passes it to the constructor, along with an `OWNER()` helper function that returns a reusable mock address for testing.
+Since the updated `HelloContract` constructor now expects an owner address, we need to provide one when deploying the contract in our tests. We’ll create a `deploy_contract` helper function that takes the owner address as a parameter and passes it to the constructor, along with an `OWNER` constant that provides a reusable mock address for testing.
 
 We’ll then import the dispatchers needed to interact with the deployed contract in the test. Altogether, we have the following:
 
@@ -137,9 +137,7 @@ use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, cheat_caller_
 use cheatcodes::IHelloStarknetDispatcher;
 use cheatcodes::IHelloStarknetDispatcherTrait;
 
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
 
 fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
     let contract = declare(name).unwrap().contract_class(); // Declare the contract class
@@ -151,13 +149,13 @@ fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
 
 The `IHelloStarknetDispatcher` and `IHelloStarknetDispatcherTrait` dispatchers allow us to call contract functions from the tests.
 
-`OWNER()` converts the string literal `'OWNER'` into a `ContractAddress` type that is reusable throughout our tests.
+`OWNER` is a constant that converts the string literal `'OWNER'` into a `ContractAddress` type that is reusable throughout our tests.
 
 The `deploy_contract` function declares the contract class, passes the owner address to the constructor via `constructor_args`, and returns the deployed contract's address for us to interact with.
 
 **Test 1: Testing the failure case**
 
-This first test shows what happens when we try to call `increase_balance()` without using the`cheat_caller_address` cheatcode. We'll deploy the contract with `OWNER()` as the owner, then attempt to increase the balance. This will fail because the test environment's address is different from the owner address stored in the contract.
+This first test shows what happens when we try to call `increase_balance()` without using the `cheat_caller_address` cheatcode. We'll deploy the contract with `OWNER` as the owner, then attempt to increase the balance. This will fail because the test environment's address is different from the owner address stored in the contract.
 
 Add this `test_environment_address_owner_check` test code into your test file:
 
@@ -169,9 +167,7 @@ use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, cheat_caller_
 use cheatcodes::IHelloStarknetDispatcher;
 use cheatcodes::IHelloStarknetDispatcherTrait;
 
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
 
 fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
     let contract = declare(name).unwrap().contract_class();
@@ -183,16 +179,16 @@ fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
 //NEWLY ADDED//
 #[test]
 fn test_environment_address_owner_check() {
-    // Deploy the HelloStarknet contract with OWNER() as the owner
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    // Deploy the HelloStarknet contract with OWNER as the owner
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
     let dispatcher = IHelloStarknetDispatcher { contract_address };
 
     // Verify the owner was set correctly during deployment
-    assert(dispatcher.get_owner() == OWNER(), 'Owner not set correctly');
+    assert(dispatcher.get_owner() == OWNER, 'Owner not set correctly');
 
-    // This call should fail because the test environment address != OWNER()
+    // This call should fail because the test environment address != OWNER
     // The get_caller_address() inside increase_balance will return the environment address,
-    // which is not the OWNER(), so the owner check should fail
+    // which is not the OWNER, so the owner check should fail
     dispatcher.increase_balance(42);
 }
 ```
@@ -201,7 +197,7 @@ Run `scarb test test_environment_address_owner_check`. You should see this failu
 
 ![A failed test highlighted](https://r2media.rareskills.io/CairoCheatcodes/image1.png)
 
-The failure occurs because when `dispatcher.increase_balance(42)` executes, the `get_caller_address()` function inside `increase_balance()` returns the test environment's address, not `OWNER()`. Since the contract's owner is set to `OWNER()`, the assertion `assert(caller == self.owner.read(), 'Only owner')` fails.
+The failure occurs because when `dispatcher.increase_balance(42)` executes, the `get_caller_address()` function inside `increase_balance()` returns the test environment's address, not `OWNER`. Since the contract's owner is set to `OWNER`, the assertion `assert(caller == self.owner.read(), 'Only owner')` fails.
 
 **Test 2: Using the `cheat_caller_address` cheatcode**
 
@@ -215,9 +211,7 @@ use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, cheat_caller_
 use cheatcodes::IHelloStarknetDispatcher;
 use cheatcodes::IHelloStarknetDispatcherTrait;
 
-fn OWNER() -> ContractAddress {
-    'OWNER'.try_into().unwrap()
-}
+const OWNER: ContractAddress = 'OWNER'.try_into().unwrap();
 
 fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
     let contract = declare(name).unwrap().contract_class();
@@ -229,15 +223,15 @@ fn deploy_contract(name: ByteArray, owner: ContractAddress) -> ContractAddress {
 //NEWLY ADDED//
 #[test]
 fn test_cheat_caller_address() {
-    // Deploy the HelloStarknet contract with OWNER() as the owner
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    // Deploy the HelloStarknet contract with OWNER as the owner
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
     let dispatcher = IHelloStarknetDispatcher { contract_address };
 
     // Verify the owner was set correctly during deployment
-    assert(dispatcher.get_owner() == OWNER(), 'Owner not set correctly');
+    assert(dispatcher.get_owner() == OWNER, 'Owner not set correctly');
 
     // cheat caller address to be the owner
-    cheat_caller_address(contract_address, OWNER(), CheatSpan::TargetCalls(1));
+    cheat_caller_address(contract_address, OWNER, CheatSpan::TargetCalls(1));
 
     dispatcher.increase_balance(42); // This function call uses the cheat
     assert(dispatcher.get_balance() == 42, 'Balance not 42');
@@ -247,9 +241,9 @@ fn test_cheat_caller_address() {
 }
 ```
 
-The `cheat_caller_address(contract_address, OWNER(), CheatSpan::TargetCalls(1))` call overrides what `get_caller_address()` returns. It makes the contract believe that the next function call comes from `OWNER()` instead of the test environment.
+The `cheat_caller_address(contract_address, OWNER, CheatSpan::TargetCalls(1))` call overrides what `get_caller_address()` returns. It makes the contract believe that the next function call comes from `OWNER` instead of the test environment.
 
-When `dispatcher.increase_balance(42)` executes, `get_caller_address()` returns `OWNER()`, allowing the owner check to pass.
+When `dispatcher.increase_balance(42)` executes, `get_caller_address()` returns `OWNER`, allowing the owner check to pass.
 
 Run `scarb test test_cheat_caller_address` and you should see the test pass:
 
@@ -257,7 +251,7 @@ Run `scarb test test_cheat_caller_address` and you should see the test pass:
 
 The `CheatSpan::TargetCalls(1)` parameter tells snforge to apply the caller cheat for only the next function call `(increase_balance(42))`. After that, the caller address returns to normal.
 
-If we tried to call `increase_balance()` again without another cheat or increase the TargetCalls, it would fail because the caller would no longer be the owner.
+If we tried to call `increase_balance()` again without another cheat or increase the `TargetCalls`, it would fail because the caller would no longer be the owner.
 
 ### Persistent caller Impersonation with `start_cheat_caller_address` and `stop_cheat_caller_address`
 
@@ -286,13 +280,13 @@ The following test shows how to use `start_cheat_caller_address` for persistent 
 ```rust
 #[test]
 fn test_persistent_caller_cheat() {
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
     let dispatcher = IHelloStarknetDispatcher { contract_address };
 
-    // Start impersonating OWNER() for all calls to this specific contract until we explicitly stop it
-    start_cheat_caller_address(contract_address, OWNER());
+    // Start impersonating OWNER for all calls to this specific contract until we explicitly stop it
+    start_cheat_caller_address(contract_address, OWNER);
 
-    // multiple calls will all use OWNER() as caller
+    // multiple calls will all use OWNER as caller
     dispatcher.increase_balance(10);
     dispatcher.increase_balance(2);
     dispatcher.increase_balance(45);
@@ -304,15 +298,15 @@ fn test_persistent_caller_cheat() {
 }
 ```
 
-In `test_persistent_caller_cheat()`, we deploy the contract with `OWNER()` as the
-stored owner, then call `start_cheat_caller_address(contract_address, OWNER())`
-to begin impersonating the owner for all subsequent calls to that contract
+In `test_persistent_caller_cheat()`, we deploy the contract with `OWNER` as the
+stored owner, then call `start_cheat_caller_address(contract_address, OWNER)`
+to begin impersonating the owner for all subsequent calls to that contract.
 
 Copy the test above into `tests/test_contract.cairo` and run it using `scarb test test_persistent_caller_cheat`.
 
 All three calls to `increase_balance` will succeed because the cheat remains active
 across all function calls. Each time the function checks `get_caller_address()`,
-it returns `OWNER()` instead of the test environment's address. The cheat stays
+it returns `OWNER` instead of the test environment's address. The cheat stays
 active until we explicitly call `stop_cheat_caller_address(contract_address)`.
 
 ![A passing test highlighted](https://r2media.rareskills.io/CairoCheatcodes/image3.png)
@@ -338,19 +332,19 @@ The test below uses this `start_cheat_caller_address_global` cheatcode to intera
 #[test]
 fn test_global_caller_cheat() {
     // Deploy two separate instances of the HelloStarknet contract
-    // Both contracts have OWNER() as their owner
-    let contract1 = deploy_contract("HelloStarknet", OWNER());
-    let contract2 = deploy_contract("HelloStarknet", OWNER());
+    // Both contracts have OWNER as their owner
+    let contract1 = deploy_contract("HelloStarknet", OWNER);
+    let contract2 = deploy_contract("HelloStarknet", OWNER);
 
     // Create dispatchers to interact with each contract
     let dispatcher1 = IHelloStarknetDispatcher { contract_address: contract1 };
     let dispatcher2 = IHelloStarknetDispatcher { contract_address: contract2 };
 
     // Start global caller impersonation - affects ALL contracts
-    // Every contract call will now appear to come from OWNER()
-    start_cheat_caller_address_global(OWNER());
+    // Every contract call will now appear to come from OWNER
+    start_cheat_caller_address_global(OWNER);
 
-    // Both calls succeed because both contracts see OWNER() as the caller
+    // Both calls succeed because both contracts see OWNER as the caller
     dispatcher1.increase_balance(100);
     dispatcher2.increase_balance(200);
 
@@ -365,12 +359,11 @@ fn test_global_caller_cheat() {
 
 Add the test code above to your `test_contract.cairo` file and run it with `scarb test test_global_caller_cheat`.
 
-The test would pass because `start_cheat_caller_address_global` in the `test_global_caller_cheat()` test affects all contracts simultaneously. Both contracts (`contract1` and `contract2`) sees the caller as `OWNER()`, so both operations succeed without needing separate cheats for each contract.
+The test would pass because `start_cheat_caller_address_global` in the `test_global_caller_cheat()` test affects all contracts simultaneously. Both contracts (`contract1` and `contract2`) sees the caller as `OWNER`, so both operations succeed without needing separate cheats for each contract.
 
 This global caller cheatcode is particularly useful for testing interactions between multiple contracts where all calls should originate from the same address. A practical example is staking protocols, where a user needs to interact with multiple contracts, approving tokens on an ERC-20 contract, then staking those tokens in a staking contract, using the same caller address. Using the global caller cheat ensures consistent caller identity across all these interconnected operations.
 
-Just as `caller_address` cheatcodes let us control who calls contract functions, we also need a way to test contracts with time-dependent logic without waiting for actual time to pass. Many smart contracts include time-based restrictions such as withdrawal delays, vesting schedules, or cooldown periods.  Testing these features would normally require waiting for real time to elapse, making tests impractical. Block timestamp cheatcodes solve this problem by letting us control
-the contract's perception of time.
+Just as `caller_address` cheatcodes let us control who calls contract functions, we also need a way to test contracts with time-dependent logic without waiting for actual time to pass. Many smart contracts include time-based restrictions such as withdrawal delays, vesting schedules, or cooldown periods.  Testing these features would normally require waiting for real time to elapse, making tests impractical. Block timestamp cheatcodes solve this problem by letting us control the contract's perception of time.
 
 ## `block_timestamp` Cheatcodes
 
@@ -378,7 +371,7 @@ the contract's perception of time.
 
 | Starknet foundry `block_timestamp` cheatcode | What it does | Solidity foundry equivalent |
 | --- | --- | --- |
-| `cheat_block_timestamp(target, timestamp, span)` | Sets block timestamp for a target contract, limited by `CheatSpan` | No direct equivalent - `vm.warp(timestamp)` is global only |
+| `cheat_block_timestamp(target, timestamp, span)` | Sets block timestamp for a target contract, limited by `CheatSpan` | No direct equivalent (`vm.warp(timestamp)` is global only) |
 | `start_cheat_block_timestamp(target, timestamp)` | Starts setting timestamp for a target contract | No direct equivalent |
 | `start_cheat_block_timestamp_global(timestamp)` | Sets block timestamp globally across all contracts | `vm.warp(timestamp)` |
 | `stop_cheat_block_timestamp(target)` | Stops timestamp modification for a target contract | No direct equivalent |
@@ -501,19 +494,18 @@ The function takes three parameters:
 > Note that in the test environment, `get_block_timestamp()` returns 0 by default, so we can't rely on it for timestamp assertions in our tests. Instead, we need to calculate and track timestamps manually based on the values we set with cheatcodes.
 >
 
-To test time-locked functionality, add the `cheat_block_timestamp` cheatcode to
-your existing snforge library imports.
+To test time-locked functionality, add the `cheat_block_timestamp` cheatcode to your existing snforge library imports.
 
 We'll first show that time-locked withdrawals fail without any timestamp manipulation, then show how the cheatcodes enable us to bypass the time restriction:
 
 ```rust
 #[test]
 fn test_time_locked_withdrawal_fails_without_cheat() {
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
     let dispatcher = IHelloStarknetDispatcher { contract_address };
 
     // Set up as owner for initial state
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Set up the contract state
     dispatcher.increase_balance(1000);
@@ -534,17 +526,16 @@ When you run `scarb test test_time_locked_withdrawal_fails_without_cheat`, this 
 
 ![A failed test showing the time lock is functional](https://r2media.rareskills.io/CairoCheatcodes/image2.png)
 
-Now let's see a test that "time travels" using `cheat_block_timestamp` to simulate
-enough time passing for a time-locked withdrawal to succeed.
+Now let's see a test that "time travels" using `cheat_block_timestamp` to simulate enough time passing for a time-locked withdrawal to succeed.
 
 ```rust
 #[test]
 fn test_cheat_block_timestamp() {
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
     let dispatcher = IHelloStarknetDispatcher { contract_address };
 
     // Set up initial state: we need 2 owner calls (increase_balance + set_lock_time)
-    cheat_caller_address(contract_address, OWNER(), CheatSpan::TargetCalls(2));
+    cheat_caller_address(contract_address, OWNER, CheatSpan::TargetCalls(2));
 
     // Add 1000 to the balance (first owner call)
     dispatcher.increase_balance(1000);  // Balance: 0 + 1000 = 1000
@@ -557,7 +548,7 @@ fn test_cheat_block_timestamp() {
     cheat_block_timestamp(contract_address, future_timestamp, CheatSpan::TargetCalls(1));
 
     // Need to impersonate owner again for the withdrawal call
-    cheat_caller_address(contract_address, OWNER(), CheatSpan::TargetCalls(1));
+    cheat_caller_address(contract_address, OWNER, CheatSpan::TargetCalls(1));
 
     // This withdrawal succeeds because get_block_timestamp() now returns 7200 which is > lock_until (3600)
     dispatcher.time_locked_withdrawal(100);  // Balance: 1000 - 100 = 900
@@ -600,13 +591,13 @@ Consider this test code below that shows how to advance time by restarting times
 ```rust
 #[test]
 fn test_start_cheat_block_timestamp() {
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
     let dispatcher = IHelloStarknetDispatcher { contract_address };
 
     // Set a specific starting timestamp (August 6th, 2025)
     let start_time = 1754439529;
 
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Set up the contract state
     dispatcher.increase_balance(1000);
@@ -672,10 +663,10 @@ Here's a basic revert test example that verifies that time-locked withdrawals fa
 #[test]
 #[should_panic(expected: ('Still locked',))]
 fn test_time_locked_withdrawal_fails_too_early() {
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
     let dispatcher = IHelloStarknetDispatcher { contract_address };
 
-    start_cheat_caller_address(contract_address, OWNER());
+    start_cheat_caller_address(contract_address, OWNER);
 
     // Set up the contract state
     dispatcher.increase_balance(1000);
@@ -697,7 +688,7 @@ We didn't need `stop_cheat_caller_address` in the `test_time_locked_withdrawal_f
 
 ### Using Safe Dispatcher
 
-Sometimes we want to check the error without making our test panic. For this, we can use the "Safe Dispatcher."
+Sometimes we want to check the error without making our test panic. For this, we can use the "Safe Dispatcher".
 
 Safe Dispatcher is an automatically generated variant of our contract dispatcher that returns `Result<T, Array<felt252>>` instead of panicking directly.
 
@@ -715,28 +706,19 @@ Use Safe Dispatcher when you need to:
 The following test example uses **Safe Dispatcher** to verify access control by ensuring that unauthorized calls both fail and return the correct error message. Import the Safe Dispatchers (`IHelloStarknetSafeDispatcher`  and `IHelloStarknetSafeDispatcherTrait` ) to enable contract interaction:
 
 ```rust
-use cheatcodes::IHelloStarknetSafeDispatcher; //import SafeDispatcher
-use cheatcodes::IHelloStarknetSafeDispatcherTrait; //import SafeDispatcherTrait
-```
-
-Then, add the following code to `test/test_contract.cairo` to test the `safe_dispatcher` feature:
-
-```rust
-fn USER_1() -> ContractAddress {
-    'USER_1'.try_into().unwrap()
-}
+const USER: ContractAddress = 'USER'.try_into().unwrap();
 
 #[test]
 #[feature("safe_dispatcher")]
 fn test_non_owner_error_with_safe_dispatcher() {
-    // Deploy the HelloStarknet contract with OWNER() as the owner
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    // Deploy the HelloStarknet contract with OWNER as the owner
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
 
     // Use the safe dispatcher variant to handle errors gracefully
     let safe_dispatcher = IHelloStarknetSafeDispatcher { contract_address };
 
-    // Impersonate USER_1() who is NOT the owner
-    start_cheat_caller_address(contract_address, USER_1());
+    // Impersonate USER who is NOT the owner
+    start_cheat_caller_address(contract_address, USER);
 
     // Call increase_balance - this will fail but return a Result instead of panicking
     match safe_dispatcher.increase_balance(100) {
@@ -755,7 +737,7 @@ fn test_non_owner_error_with_safe_dispatcher() {
 }
 ```
 
-In the `test_non_owner_error_with_safe_dispatcher` test above, when `USER_1()` tries to increase balance, the safe dispatcher returns either success (`Ok`) or failure (`Err`):
+In the `test_non_owner_error_with_safe_dispatcher` test above, when `USER_1` tries to increase balance, the safe dispatcher returns either success (`Ok`) or failure (`Err`):
 
 ```rust
 match safe_dispatcher.increase_balance(100) {
@@ -795,17 +777,16 @@ Each storage variable has a unique slot that we can write to directly using the 
 fn store(target: ContractAddress, storage_address: felt252, serialized_value: Span<felt252>)
 ```
 
-It takes three parameters**:**
-
+It takes three parameters:
 - `target`: The contract address to modify
 - `storage_address`: The storage slot location (calculated using `map_entry_address`)
-- `serialized_value`: The value to store, converted to felt252 array
+- `serialized_value`: The value to store, converted to `felt252` array
 
 ### Finding Storage Addresses
 
 To use the `store` cheatcode, we must first calculate the **exact storage address** for the variable we want to modify. We will use `map_entry_address` to calculate the storage location.
 
-Import both `store` and `map_entry_address` from snforge_std library along with the existing ones:
+Import both `store` and `map_entry_address` from `snforge_std` library along with the existing ones:
 
 ```rust
 use snforge_std::{declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address, stop_cheat_caller_address, cheat_caller_address, CheatSpan, start_cheat_caller_address_global, stop_cheat_caller_address_global, cheat_block_timestamp, start_cheat_block_timestamp, stop_cheat_block_timestamp, store,  map_entry_address};
@@ -819,11 +800,13 @@ let balance_storage_addr = map_entry_address(
     keys: array![].span()
 );
 ```
+The `map_entry_address` function calculates the exact storage slot address for a variable. It takes two parameters:
+- `map_selector`: A storage identifier that uniquely identifies the storage variable
+- `keys`: An array of keys used for accessing mapped storage
 
-- `"balance"` is the storage variable name from our contract's Storage struct
-- `map_entry_address` calculates the exact memory address where "balance" is stored
-- `selector!("balance")` converts the storage variable name (`balance`) into a storage identifier.
-- `keys: array![].span()` is empty because `balance` is a simple storage variable, not a mapping.
+In our example:
+- `selector!("balance")` converts the storage variable name (`balance`) into the required storage identifier
+- `keys: array![].span()` is an empty array because `balance` is a simple storage variable, not a mapping. If `balance` were a mapping like `LegacyMap<ContractAddress, u256>`, we would pass the address key here
 
 The result, `balance_storage_addr`, is the storage slot address we can now pass to the `store` cheatcode.
 
@@ -842,27 +825,26 @@ For simple storage variables like `balance` (non-mappings), you can also use the
     - Any storage type where you need to specify keys or indices
     - Simple variables (using empty keys: `array![].span()`) - though `selector!()` is shorter for this case
 
-Both methods calculate the exact storage address where the contract stores the
-variable, allowing us to write new values directly to that location.
+Both methods calculate the exact storage address where the contract stores the variable, allowing us to write new values directly to that location.
 
 ### Serializing Values
 
 Different data types need different serialization formats:
 
-- For `ContractAddress` - single `felt252`
+- For `ContractAddress`: single `felt252`
 
 ```rust
-let serialized_owner = array![OWNER().into()];
+let serialized_owner = array![OWNER.into()];
 ```
 
-- For `u64` - single `felt252`
+- For `u64`: single `felt252`
 
 ```rust
 let timestamp: u64 = 1641070800;
 let serialized_timestamp = array![timestamp.into()];
 ```
 
-- For `u256` (our balance type) - needs low and high parts because `u256` is larger than what a single `felt252` can hold.
+- For `u256` (our balance type): needs low and high parts because `u256` is larger than what a single `felt252` can hold.
 
 ```rust
 let balance: u256 = 5000;
@@ -874,7 +856,7 @@ The following test demonstrates that storage writes bypass all access control; n
 ```rust
 #[test]
 fn test_store_balance_directly() {
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
     let dispatcher = IHelloStarknetDispatcher { contract_address };
 
     //calculate the storage address where the "balance" variable is stored
@@ -911,16 +893,16 @@ fn load(target: ContractAddress, storage_address: felt252, size: felt252) -> Arr
 
 It takes three parameters:
 
-- target: The contract address to read from
-- storage_address: The storage slot location to read
-- size: Number of `felt252` values to read
+- `target`: The contract address to read from
+- `storage_address`: The storage slot location to read
+- `size`: Number of `felt252` values to read
 
 Import `load` from `snforge_std`. Here's a test that writes a balance using `store` and reads it back using `load`:
 
 ```rust
 #[test]
 fn test_load_balance_directly() {
-    let contract_address = deploy_contract("HelloStarknet", OWNER());
+    let contract_address = deploy_contract("HelloStarknet", OWNER);
 
     // Calculate the storage address where the "balance" variable is stored
     let balance_storage_addr = selector!("balance");
@@ -959,7 +941,7 @@ Notice that we used 2 as the size to load:
  let stored_data = load(contract_address, balance_storage_addr, 2);
 ```
 
-This is because ‘balance’ is of type `u256` and in Cairo, `u256` values are serialized as 2 `felt252` values; one containing the lower 128 bits and another containing the upper 128 bits as mentioned earlier. This is why we need to read 2 felts and reconstruct the complete `u256` value. If the value stored were of type `u512`, we would be loading 4 `felt252` values.
+This is because `balance` is of type `u256` and in Cairo, `u256` values are serialized as 2 `felt252` values; one containing the lower 128 bits and another containing the upper 128 bits as mentioned earlier. This is why we need to read 2 felts and reconstruct the complete `u256` value. If the value stored were of type `u512`, we would be loading 4 `felt252` values.
 
 Both `store` and `load` provide direct storage access useful for setting up specific test scenarios quickly and testing how your contract works under various state conditions.
 
