@@ -278,31 +278,31 @@ To see the test, navigate to `./tests/test_contract.cairo`. Below is a break dow
 ![imports at the top of a cairo contract file](https://r2media.rareskills.io/CairoContract/image1.png)
 
 1. `use starknet::ContractAddress;`
-    
+
     This imports `ContractAddress` from `starknet` module.
-    
+
     - Imports the `ContractAddress` type.
     - This is Starknet’s representation of a contract address and is required whenever interacting with or referencing deployed contracts.
 2. `use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};`
-    
+
     This imports the tools needed to declare and deploy contracts during testing from starknet foundry standard library `snforge_std`.
-    
+
     - `declare`: Used to declare a contract in the test environment before deployment. It’s like submitting the contract code to the network.
     - `ContractClassTrait`: Provides helper methods for interacting with declared contract classes (*such as deploying them*).
     - `DeclareResultTrait`: Exposes a function on the declaration result that retrieves the contract class (equivalent to the contract’s bytecode in Solidity).
 3. `use counter::IHelloStarknetSafeDispatcher;` and `use counter::IHelloStarknetSafeDispatcherTrait;`
-    
+
     This imports the safe version of the contract interface from the project name, in our case, `counter`.
-    
+
     - `IHelloStarknetSafeDispatcher`: The safe dispatcher is responsible for calling the contract’s functions. But unlike Solidity where a function call just returns the value directly, here every call returns a wrapper that either contains the returned value (if successful) or an error (if it failed).
-        
+ 
         Importantly, even if a contract call fails, execution continues within the test function. This allows the safe dispatcher to handle the error gracefully instead of reverting the entire transaction.
-        
+
     - `IHelloStarknetSafeDispatcherTrait`: Exposes the callable functions in the contract for the dispatcher. Every function’s return value is wrapped, indicating it could succeed or fail.
 4. `use counter::IHelloStarknetDispatcher;` and `use counter::IHelloStarknetDispatcherTrait;`
-    
+
     This imports the contract interface (not the safe version) from the project name, in our case, `counter`.
-    
+
     - `IHelloStarknetDispatcher`: The dispatcher also calls the contract’s functions. However, unlike the safe version, it directly returns the function’s value without any wrapper. If the target contract fails, the call immediately panics, causing execution to stop in the test function and preventing any form of graceful error handling.
     - `IHelloStarknetDispatcherTrait`: Exposes the callable functions in the contract for the dispatcher. Every functions return the raw return types of the interface
 
