@@ -98,8 +98,7 @@ Key fields are stored separately from regular data fields in the transaction rec
 
 ## Events Data Structure in Transaction Receipts
 
-A transaction receipt is a record that contains detailed information about a 
-successful transaction. It includes block details (`block_hash`, `block_number`), transaction hash, execution status (`execution_status`, `finality_status`), gas consumption (`execution_resources`), transaction fees (`actual_fee`), etc., and any events that were emitted during execution.
+A transaction receipt is a record that contains detailed information about a successful transaction. It includes block details (`block_hash`, `block_number`), transaction hash, execution status (`execution_status`, `finality_status`), gas consumption (`execution_resources`), transaction fees (`actual_fee`), etc., and any events that were emitted during execution.
 
 Each transaction receipt contains an `events` array with keys and data for all emitted events where:
 
@@ -124,7 +123,7 @@ dotenv.config();
 async function getTxnReceipt() {
     // Initialize RPC provider with Sepolia testnet endpoint
     const alchemyApiKey = process.env.ALCHEMY_API_KEY;
-  
+
     // initialize provider for Sepolia testnet with Alchemy
     const provider = new RpcProvider({
       nodeUrl: `https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_8/${alchemyApiKey}`,
@@ -132,7 +131,7 @@ async function getTxnReceipt() {
     // Transaction hash to query (replace with actual hash)
     const transactionHash =
       "0x5df0e42012440f59eb9cdd7994a3001b72cebc781bd8527fb3a5343cdb9d6f7";
-  
+
     try {
         // Fetch transaction receipt from the network
         const receipt: any = await provider.getTransactionReceipt(transactionHash);
@@ -617,10 +616,10 @@ fn deploy_contract(name: ByteArray) -> ContractAddress {
 fn test_registration_event_emission() {
     // Deploy the UserManager contract
     let contract_address = deploy_contract("UserManager");
-    
+
     // Create a dispatcher to interact with the deployed contract
     let dispatcher = IUserManagerDispatcher { contract_address };
-    
+
     // Start spying on events before the function call
     let mut spy = spy_events();
 
@@ -686,7 +685,7 @@ Run `scarb test` you should see the test pass, confirming that our event testing
 fn test_event_structure() {
     // Deploy the UserManager contract
     let contract_address = deploy_contract("UserManager");
-    
+
     // Create a dispatcher to interact with the deployed contract
     let dispatcher = IUserManagerDispatcher { contract_address };
 
