@@ -33,7 +33,7 @@ snforge --version
 
 You should see output similar to:
 
-![A screenshot showing how to get the version for scarb and snforge in the terminal.](https://r2media.rareskills.io/CairoInstall/image6.png)
+![A screenshot showing how to get the version for scarb and snforge in the terminal.](https://r2media.rareskills.io/CairoInstall/image6a.png)
 
 ### Creating your first project
 
