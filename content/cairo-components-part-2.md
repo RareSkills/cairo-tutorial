@@ -24,7 +24,7 @@ starknet = "2.13.1"
 openzeppelin = "2.0.0" //ADD THIS LINE
 ```
 
-![OpenZeppelin in Scarb.toml](https://r2media.rareskills.io/CairoComponentsOpenZeppelin/image1.png)
+![OpenZeppelin in Scarb.toml](https://r2media.rareskills.io/CairoComponentsOpenZeppelin/OZScarb.png)
 
 The syntax `openzeppelin = "2.0.0"` automatically fetches the package from [Scarbs.xyz](https://scarbs.xyz/), Cairo's official package registry. The version "2.0.0" specifies which OpenZeppelin Contracts release to use. We're using `v2.0.0`, which is the latest stable release at the time of writing. Check [Scarbs.xyz for OpenZeppelin](https://scarbs.xyz/packages?q=openzeppelin) or the [OpenZeppelin Contracts for Cairo releases page](https://github.com/OpenZeppelin/cairo-contracts/releases) for the current latest version.
 
