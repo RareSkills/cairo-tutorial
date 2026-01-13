@@ -286,10 +286,11 @@ $$
 2 × (P+1)/2 = P+1 ≡ 1 \pmod P
 $$
 
+and,
+
 $$
 1 ÷ 2 ≡ (P + 1)/2 \pmod P
 $$
-
 
 
 In the code block below, we will show how the proof above is true and see the behavior of `felt252` division with or without remainder.
