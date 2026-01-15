@@ -392,13 +392,7 @@ Signed integers in Cairo are written using a lowercase `i` followed by the bit w
 
 
 $$
-Range=−2 ^{n−1}
-$$    
-
-to   
-
-$$
-2^{n-1} - 1
+-2^{n-1} \text{ to } 2^{n-1} - 1
 $$
 
 
