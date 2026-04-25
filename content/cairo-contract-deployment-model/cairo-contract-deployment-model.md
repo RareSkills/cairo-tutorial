@@ -34,10 +34,9 @@ Starknet currently defines four transaction types at the protocol level: `DECLAR
 
 Before we walk through the declaration and deployment process, we need to understand the two types of contracts on Starknet, regular contracts and account contracts, since each of them uses seperate deployment approaches.
 
-**Regular contract vs Account contract**
-
-| A regular contract is a smart contract that implements application logic like ERC-20 tokens, NFTs, and so on. Regular contracts cannot initiate transactions on their own and must be called by account contracts. | An account contract, on the other hand, is a type of smart contract that can validate that a transaction is authorized and execute transactions. Account contracts serve as the entry point for all transactions on Starknet. Your account on a Ready or Braavos wallet is an account contract deployed on-chain. |
+| Regular Contract                                                                                                                                                                                                   | Account Contract                                                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A regular contract is a smart contract that implements application logic like ERC-20 tokens, NFTs, and so on. Regular contracts cannot initiate transactions on their own and must be called by account contracts. | An account contract, on the other hand, is a type of smart contract that can validate that a transaction is authorized and execute transactions. Account contracts serve as the entry point for all transactions on Starknet. Your account on a Ready or Braavos wallet is an account contract deployed on-chain. |
 
 With these two contract types in mind, let's walk through each step of the declare-deploy process.
 
@@ -193,8 +192,8 @@ pub trait IUniversalDeployer {
 
 _Note: The current UDC version includes changes from earlier versions:_
 
-- `*deployContract` was replaced with snake_case `deploy_contract`\*
-- `*unique` parameter was replaced with `not_from_zero` (with inverted semantics)\*
+- _`deployContract` was replaced with snake_case `deploy_contract`_
+- _`unique` parameter was replaced with `not_from_zero` (with inverted semantics)_
 
 ### UDC Deployment Types
 
@@ -253,7 +252,7 @@ The sequencer executes the contract's constructor with the provided arguments, a
 
 Upon successful deployment, the UDC emits a `ContractDeployed` event (highlighted in pink) containing the deployment information including the new contract address, deployer, deployment type, class hash, calldata, and original salt for tracking purposes. The function then returns the newly deployed contract address to the caller.
 
-**\*Note: When deploying contracts that use `get_caller_address()` in their constructor, remember that the UDC deploys the contract, not your account directly. Therefore, `get_caller_address()` returns the UDC's address, not your account's address.** This is why we passed the owner's address as a parameter in our token contract example.\*
+_**Note: When deploying contracts that use `get_caller_address()` in their constructor, remember that the UDC deploys the contract, not your account directly. Therefore, `get_caller_address()` returns the UDC's address, not your account's address.** This is why we passed the owner's address as a parameter in our token contract example._
 
 ![Constructor function signature showing owner parameter of type ContractAddress, initializing token_name, symbol, decimal, and owner storage variables](./media/img7.png)
 
