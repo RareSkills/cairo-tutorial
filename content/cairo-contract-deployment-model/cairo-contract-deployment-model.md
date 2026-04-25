@@ -221,7 +221,7 @@ in the standard contract address calculation.
 
 This approach provides address reservation, preventing others from deploying to "your" addresses. Each deployer gets their own address space, and only you can deploy to addresses derived from your account. You'd choose this method when you want to ensure no one else can deploy to your intended addresses.
 
-1. **Origin-Independent Deployment (`not_from_zero = false`)**
+2. **Origin-Independent Deployment (`not_from_zero = false`)**
 
 With origin-independent deployment, contract addresses are calculated independently of who deploys them. The address depends only on the salt, class hash, and constructor parameters.
 
