@@ -203,9 +203,9 @@ sncast account create --network <NETWORK_NAME> --name <ACCOUNT_NAME>
 ```
 
 Where:
+
 - `<NETWORK_NAME>` is the network you want to deploy to (e.g., `sepolia`, `mainnet`)
 - `<ACCOUNT_NAME>` is an arbitrary local identifier you choose to reference this account (e.g., `my_account`, `deployer_account`)
-
 
 For example, to create an account on Sepolia:
 
@@ -214,6 +214,7 @@ sncast account create --network sepolia --name new_account_1
 ```
 
 When you run the above command, `sncast`:
+
 - generates a private/public key pair locally
 - computes the account address deterministically from the public key and salt
 - saves the account details in a local JSON file (`~/.starknet_accounts/starknet_open_zeppelin_accounts.json`). Inspect the file with:
@@ -225,7 +226,6 @@ cat ~/.starknet_accounts/starknet_open_zeppelin_accounts.json
 - The address becomes known to the network (in our case, sepolia) but no account contract is deployed yet.
 
 > Note: We use `account create` here (instead of `declare`) since account contract classes are typically pre-declared by their providers. In this case, OpenZeppelin has already declared the account contract class we are using, so we are only creating an instance of it, not declaring a new one.
->
 
 After running the `create` command, your output should look as follows:
 
@@ -243,7 +243,7 @@ Once you've gotten the test tokens, deploy the account using:
 sncast account deploy --network sepolia --name <ACCOUNT_NAME>
 ```
 
-Replace `<ACCOUNT_NAME>` with the same name used during account creation. For this example, we’ll use `new_account_1`  since that’s what we used in the `account create` step:
+Replace `<ACCOUNT_NAME>` with the same name used during account creation. For this example, we’ll use `new_account_1` since that’s what we used in the `account create` step:
 
 ```
 sncast account deploy --network sepolia --name new_account_1
@@ -273,6 +273,7 @@ declare \
 ```
 
 Where:
+
 - `<ACCOUNT_NAME>`: the name of the account you created and deployed earlier
 - `<URL>`: the RPC endpoint URL for the network you're deploying to
 - `<CONTRACT_NAME>`: the name of the contract module, for example `ERC20` from `mod ERC20 {}`
@@ -301,9 +302,11 @@ The output shows both the transaction hash and the class hash. Copy the class ha
 `sncast` provides a ready-to-use deployment command in the output. You can copy that generated command directly, or use the format below for better readability. Both approaches work identically.
 
 ### Deploying Contract Instances via UDC
+
 With our contract class declared, we can now deploy any number of instances from that class hash. The `sncast deploy` command abstracts away the UDC interaction, and handles the deployment under the hood.
 
 The syntax to deploy a contract is:
+
 ```bash
 sncast \
  --account <ACCOUNT_NAME> \
@@ -344,10 +347,10 @@ When you ran the contract deployment command, `sncast` handled the UDC interacti
 
 - Since no `--salt` was provided, `sncast` generates a random salt (`0xd815d280876b878e` as shown in the second row of the input data table) to ensure a unique contract address
 - Your account sends an `INVOKE` transaction to the UDC with:
-    - `classHash`: `0x23a5a4819dcac3a6b5fe724596647d3fc1f176ca565a0fb908c4457f1cc875b` (first row in the input data table)
-    - `salt`: `0xd815d280876b878e` (second row in the input data table)
-    - `notFromZero`: `0x0` (false); since `--unique` was not passed, the contract address is derived from the deployer's address rather than the zero address
-    - `calldata`: `[0x14154fb6dd088b5ceb46df635ecce6e1a9b0455357931ac7df4263a7dbf39a9]` (fourth row in the input data table - your constructor arguments, the owner's address)
+  - `classHash`: `0x23a5a4819dcac3a6b5fe724596647d3fc1f176ca565a0fb908c4457f1cc875b` (first row in the input data table)
+  - `salt`: `0xd815d280876b878e` (second row in the input data table)
+  - `notFromZero`: `0x0` (false); since `--unique` was not passed, the contract address is derived from the deployer's address rather than the zero address
+  - `calldata`: `[0x14154fb6dd088b5ceb46df635ecce6e1a9b0455357931ac7df4263a7dbf39a9]` (fourth row in the input data table - your constructor arguments, the owner's address)
 - The UDC calls `deployContract` to create your contract instance returning the contract address `0x02ceed65a4bd731034c01113685c831b01c15d7d432f71afb1cf1634b53a2125` (in the output data field highlighted in yellow)
 
 ## Deploying with Starknet.js
@@ -356,7 +359,7 @@ As an alternative to using Starknet Foundry's `sncast` command, we can also depl
 
 ### Setting Up the Environment
 
-Since the ERC-20 contract class was already declared on-chain using the `sncast` approach, attempting to declare the same code again from the same project with the same compiler version will result in a “*contract has already been declared”* error, because an identical class hash already exists on-chain. To avoid this error, we'll create a new Scarb project:
+Since the ERC-20 contract class was already declared on-chain using the `sncast` approach, attempting to declare the same code again from the same project with the same compiler version will result in a “_contract has already been declared”_ error, because an identical class hash already exists on-chain. To avoid this error, we'll create a new Scarb project:
 
 ```bash
 scarb new erc20_starknetjs
@@ -422,6 +425,8 @@ Import the account we created earlier into Ready wallet using the private key fr
   <source src="./media/import-account.mp4" type="video/mp4">
 </video>
 
+![Account import](/content/cairo-contract-deployment/media/import-account.mp4)
+
 Once imported, set the following in your `.env` file:
 
 - `OWNER_ADDRESS`: The imported account's address (same as in the JSON file)
@@ -435,7 +440,6 @@ If you already have an Ready or Braavos Sepolia account, you can use those crede
 - `PRIVATE_KEY`: Your existing wallet's private key
 
 > Add `.env` to your `.gitignore` file to avoid committing your private key to version control.
->
 
 ### Generating the CASM File
 
@@ -463,7 +467,6 @@ This command takes two arguments:
 - **Output:** `target/dev/erc20_starknetjs_ERC20.compiled_contract_class.json` - the CASM bytecode file that will be created
 
 > The filename follows the pattern `{package_name}_{contract_module_name}`. If your contract name differs from `erc20_starknetjs_ERC20`, adjust both file paths accordingly, then run the command.
->
 
 You'll see the newly generated `.compiled_contract_class.json` file in your `target/dev` directory, containing the CASM bytecode needed for deployment.
 
@@ -482,8 +485,8 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 async function main() {
- // Setup provider with Alchemy RPC URL
- const provider = new RpcProvider({
+  // Setup provider with Alchemy RPC URL
+  const provider = new RpcProvider({
     nodeUrl: `https://starknet-sepolia.g.alchemy.com/starknet/version/rpc/v0_10/${process.env.ALCHEMY_API_KEY}`,
   });
 
@@ -502,17 +505,22 @@ async function main() {
   );
   const compiledCasm = json.parse(
     fs
-      .readFileSync("./target/dev/erc20_starknetjs_ERC20.compiled_contract_class.json")
+      .readFileSync(
+        "./target/dev/erc20_starknetjs_ERC20.compiled_contract_class.json"
+      )
       .toString("ascii")
   );
 
-   // Declare the contract
+  // Declare the contract
   console.log("\nDeclaring contract...");
   const declareResponse = await account.declare({
     contract: compiledSierra,
     casm: compiledCasm,
   });
-  console.log("Declaration transaction hash:", declareResponse.transaction_hash);
+  console.log(
+    "Declaration transaction hash:",
+    declareResponse.transaction_hash
+  );
 
   await provider.waitForTransaction(declareResponse.transaction_hash);
 
@@ -522,7 +530,7 @@ async function main() {
     owner: account.address,
   });
 
-   // Deploy the contract
+  // Deploy the contract
   console.log("\nDeploying contract...");
   const deployResponse = await account.deployContract({
     classHash: declareResponse.class_hash,
@@ -559,10 +567,10 @@ For example, if you see `my_token_MyERC20.contract_class.json`, update the file 
 
 ```tsx
 // Change from:
-fs.readFileSync("./target/dev/erc20_starknetjs_ERC20.contract_class.json")
+fs.readFileSync("./target/dev/erc20_starknetjs_ERC20.contract_class.json");
 
 // To:
-fs.readFileSync("./target/dev/my_token_MyERC20.contract_class.json")
+fs.readFileSync("./target/dev/my_token_MyERC20.contract_class.json");
 ```
 
 Do the same for both `.contract_class.json` and `.compiled_contract_class.json` files.
@@ -583,23 +591,23 @@ If successful, you'll see the output as follows:
 
 ## Interacting with the Deployed Contract on Voyager
 
-Now that the contract is deployed, we can interact with it through Voyager's web interface.  Go to the deployed contract on Voyager Sepolia. Click on the "[Write Contract](https://sepolia.voyager.online/contract/0x05ee2e488eb54260fd6ada1885920ec17ea8c8f45732b4682981f0b39ef3c0cb)" tab. This interface shows all the contract's public functions.
+Now that the contract is deployed, we can interact with it through Voyager's web interface. Go to the deployed contract on Voyager Sepolia. Click on the "[Write Contract](https://sepolia.voyager.online/contract/0x05ee2e488eb54260fd6ada1885920ec17ea8c8f45732b4682981f0b39ef3c0cb)" tab. This interface shows all the contract's public functions.
 
 Connect your wallet (Ready or Braavos) and ensure you're using the wallet that has the address you set as owner. This is important because only the owner can call restricted functions like `mint`.
 
 ![Block explorer Write Contract tab showing transfer function interface with Connect Wallet button](./media/img12.png)
 
-Mint tokens In the ***Write*** section, find the `mint` function and fill in the parameters:
+Mint tokens In the **_Write_** section, find the `mint` function and fill in the parameters:
 
 ![Block explorer showing mint function with recipient address and amount fields, transaction confirmation dialog](./media/img13.png)
 
-Click ***"Write"*** and confirm the transaction in your wallet. After confirmation, you'll receive the transaction hash.
+Click **_"Write"_** and confirm the transaction in your wallet. After confirmation, you'll receive the transaction hash.
 
-Switch to the ***Read*** section and find `total_supply`. Click ***"Query*"** to see the result:
+Switch to the **_Read_** section and find `total_supply`. Click **_"Query_"** to see the result:
 
 ![Block explorer Read Contract tab showing total_supply function return value](./media/img14.png)
 
-Check your balance In the same ***Read*** section, use `balance_of` with the address you just minted tokens to. Click **"*Query*"** to confirm you received `1200000000000000000` (which equals 1000 minted Raretokens).
+Check your balance In the same **_Read_** section, use `balance_of` with the address you just minted tokens to. Click **"_Query_"** to confirm you received `1200000000000000000` (which equals 1000 minted Raretokens).
 
 ![Block explorer showing balance_of function with account address input return balance](./media/img15.png)
 
@@ -670,7 +678,6 @@ async function interactWithERC20() {
   } else {
     console.error("Transaction failed");
   }
-
 }
 
 // run the function and handle any errors
@@ -689,7 +696,7 @@ You should see output showing successful minting and the emitted `Transfer` even
 
 ### Interacting with Existing Tokens
 
-You can also interact with existing ERC-20 tokens like *STRK* by changing the contract address. Create a new `interact_existing.ts` file and paste the following script to check your *STRK* balance:
+You can also interact with existing ERC-20 tokens like _STRK_ by changing the contract address. Create a new `interact_existing.ts` file and paste the following script to check your _STRK_ balance:
 
 ```tsx
 import { RpcProvider, Contract } from "starknet";
@@ -705,7 +712,8 @@ async function checkSTRKBalance() {
   });
 
   // REPLACE WITH YOUR ACCOUNT ADDRESS
-  const accountAddress = "0x014154fb6Dd088b5ceB46df635eCCe6e1a9B0455357931aC7Df4263A7dBf39a9";
+  const accountAddress =
+    "0x014154fb6Dd088b5ceB46df635eCCe6e1a9B0455357931aC7Df4263A7dBf39a9";
 
   const strkContractAddress =
     "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
@@ -732,7 +740,7 @@ Run with: `npx tsx scripts/interact_existing.ts`
 
 ![Terminal displaying STRK token balance](./media/img17.png)
 
-***Note**: When interacting with existing tokens like STRK, you can check balances and, if you hold tokens, transfer or approve them, but minting requires being the contract owner.*
+**\*Note**: When interacting with existing tokens like STRK, you can check balances and, if you hold tokens, transfer or approve them, but minting requires being the contract owner.\*
 
 ## Wrapping Up
 
