@@ -52,7 +52,7 @@ To declare a contract, we first need to compile our Cairo source code into the f
 
 ![Compilation flow diagram showing Cairo source code compiling to Sierra intermediate representation, then to CASM bytecode for VM execution](./media/img2.png)
 
-#### **Build Artifacts**
+#### Build Artifacts
 
 When we compile any contract with `scarb build`, for example, our ERC‑20 contract, it produces two build artifacts in the (`target/dev`) directory:
 
@@ -76,7 +76,7 @@ This file contains the contract's metadata and links it to its compiled Sierra f
 
 As you can see in the artifacts file in the image above, the `"casm"` field is `null` at compile time. This is because the CASM will be generated from Sierra class during the declaration process on-chain.
 
-### **What happens during a `DECLARE` transaction**
+### What happens during a `DECLARE` transaction
 
 With the compiled Sierra class ready, we use a `DECLARE` transaction to register it with the network. Tools like `sncast` or Starknet.js read the `starknet_artifacts.json` file to locate the Sierra class file for the contract, then submits that Sierra class in the `DECLARE` transaction, which our account signs. The sequencer then compiles Sierra to CASM and computes two hashes:
 
@@ -228,7 +228,7 @@ The UDC uses the original salt that was passed unchanged and passes `0` as the d
 
 This makes deployments deterministic across deployers, anyone deploying the same contract with identical parameters gets the same address. However, only the first deployment will succeed; subsequent attempts with the same parameters will not go through since the address is already taken. This method works well when you want contract addresses to be completely predictable regardless of who deploys them, such as for deploying standard contracts across multiple networks.
 
-### **How UDC Deployment Works**
+### How UDC Deployment Works
 
 Your account contract makes a `INVOKE` call to the UDC's `deployContract` function to create the new contract:
 
@@ -256,7 +256,7 @@ _**Note: When deploying contracts that use `get_caller_address()` in their const
 
 ![Constructor function signature showing owner parameter of type ContractAddress, initializing token_name, symbol, decimal, and owner storage variables](./media/img7.png)
 
-### **UDC for Account Contracts**
+### UDC for Account Contracts
 
 While the UDC is primarily used for deploying regular contracts, it can also deploy account contracts as mentioned earlier. In this case, the deploying account pays the fees and the new account contract is linked to the deployer on-chain. This approach is useful when you don't need the new account to be pristine.
 
