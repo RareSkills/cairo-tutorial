@@ -421,9 +421,7 @@ Since we'll be calling write functions on the deployed contract through Voyager,
 
 Import the account we created earlier into Ready wallet using the private key from `~/.starknet_accounts/starknet_open_zeppelin_accounts.json`. Follow this guide to import your account:
 
-<video width="100%" controls>
-  <source src="./media/import-account.mp4" type="video/mp4">
-</video>
+<video src="https://r2media.rareskills.io/CairoVideos/import-account.mp4" type="video/mp4" autoplay loop muted controls></video>
 
 ![Account import](/content/cairo-contract-deployment/media/import-account.mp4)
 
