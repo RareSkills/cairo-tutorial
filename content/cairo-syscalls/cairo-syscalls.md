@@ -1029,8 +1029,7 @@ Now that the message (`hello`) is padded to 136 bytes, the next step is to split
 
 Here’s an animation illustrating the conversion from the padded 136-byte block into 17 little-endian `u64` chunks:
 
-<video controls>
-  <source src="media/paddedMSG.mp4" type="video/mp4">
+<video src="https://r2media.rareskills.io/CairoVideos/padded-message.mp4" type="video/mp4" autoplay loop muted controls>
 </video>
 
 The Cairo equivalent for the solidity example above:
