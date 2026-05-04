@@ -939,7 +939,7 @@ These examples show how Cairo’s Keccak functions align with Solidity’s `kecc
 The animation below shows a bytes conversion from little-endian to big endian:
 
 <video controls>
-  <source src="media/paddedMSG.mp4" type="video/mp4">
+  <source src="https://r2media.rareskills.io/CairoVideos/keccack-hello.mp4" type="video/mp4">
 </video>
 
 To do the same in Cairo, we reverse the byte order of a `u256` value by reversing each 128-bit half and swapping their positions. Cairo provides a built-in function `u128_byte_reverse` from Cairo’s `core::integer` module to reverse bytes.
