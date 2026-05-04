@@ -79,9 +79,7 @@ When you define an interface with `#[starknet::interface]`, the compiler automat
 
 In our case, defining `IRareBank` and `IRareToken` generates their respective dispatchers shown in the animation below:
 
-<video width="100%" controls>
-  <source src="./media/dispatcher.mp4" type="video/mp4">
-</video>
+<video src="https://r2media.rareskills.io/CairoVideos/dispatcher.mp4" type="video/mp4" autoplay loop muted controls></video>
 
 As seen above, the compiler generates many dispatcher-related types, but the ones most relevant for our discussion (highlighted in green) are:
 
