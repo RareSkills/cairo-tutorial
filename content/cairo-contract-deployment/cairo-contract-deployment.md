@@ -423,8 +423,6 @@ Import the account we created earlier into Ready wallet using the private key fr
 
 <video src="https://r2media.rareskills.io/CairoVideos/import-account.mp4" type="video/mp4" autoplay loop muted controls></video>
 
-![Account import](/content/cairo-contract-deployment/media/import-account.mp4)
-
 Once imported, set the following in your `.env` file:
 
 - `OWNER_ADDRESS`: The imported account's address (same as in the JSON file)
