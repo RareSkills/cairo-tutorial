@@ -706,7 +706,7 @@ This is similar to Getting Execution Context, except that the `TxInfo` field is 
 
 Below is an image of the `ExecutionInfo` struct with the new `v2::TxInfo`
 
-![image of ExecutionInfo v2 struct ](media/img.jpg)
+![image of ExecutionInfo v2 struct ](media/img.png)
 
 The newer fields (highlighted in red) in `v2::TxInfo` were added to support [V3 transactions](https://docs.starknet.io/learn/cheatsheets/transactions-reference#invoke-v3). They describe how much of the network’s resources a transaction is allowed to use, how fees may be paid, where certain transaction data is stored, and whether the transaction includes account-deployment data.
 
