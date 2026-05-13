@@ -736,7 +736,7 @@ Run with: `npx tsx scripts/interact_existing.ts`
 
 ![Terminal displaying STRK token balance](./media/img17.png)
 
-**\*Note**: When interacting with existing tokens like STRK, you can check balances and, if you hold tokens, transfer or approve them, but minting requires being the contract owner.\*
+***Note**: When interacting with existing tokens like STRK, you can check balances and, if you hold tokens, transfer or approve them, but minting requires being the contract owner.*
 
 ## Wrapping Up
 

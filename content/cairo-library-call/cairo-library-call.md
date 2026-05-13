@@ -92,7 +92,7 @@ When `CallerContract` executes the `add()` function from `CalledContract`'s clas
 
 The code from `CalledContract` executes as if it were written directly inside `CallerContract`.
 
-> `*get_contract_address()` always returns the address of the contract whose context is active, not necessarily whose code is running.*
+> `get_contract_address()` always returns the address of the contract whose context is active, not necessarily whose code is running.
 >
 
 **Library call comparison with Solidity's `delegatecall`:**
@@ -318,7 +318,4 @@ When this function executes, it runs the `MathUtils` code within `Calculator`'s 
 Using `library_call_syscall` directly allows explicit serialization handling but requires
 more code than using the library dispatcher.
 
-**Direct low-level syscalls should only be used when you need to handle serialization manually
-or when the function selector must be determined at runtime**. The library dispatcher requires
-compile-time knowledge of which function to call (e.g., `dispatcher.add()`), making it unsuitable for cases where the function depends on user input or contract state. In such
-scenarios, you use `library_call_syscall` directly.
+**Direct low-level syscalls should only be used when you need to handle serialization manually or when the function selector must be determined at runtime**. The library dispatcher requires compile-time knowledge of which function to call (e.g., `dispatcher.add()`), making it unsuitable for cases where the function depends on user input or contract state. In such scenarios, you use `library_call_syscall` directly.
