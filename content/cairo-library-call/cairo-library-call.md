@@ -1,4 +1,4 @@
-# `Library call on Starknet`
+# Library call on Starknet
 
 A library call executes the logic of a declared contract class in the context and storage of the contract that invokes it. This is similar to [Solidity’s `delegatecall`](https://rareskills.io/post/delegatecall) but uses class hashes rather than deployed contract addresses.
 
