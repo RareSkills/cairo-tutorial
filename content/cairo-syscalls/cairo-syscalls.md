@@ -6,23 +6,23 @@ Cairo introduces a similar concept through system calls (syscalls). A syscall is
 
 In this article, we will walk through the different syscalls available and how they are used in Starknet contracts.
 
-## **Syscalls and Their Solidity Equivalent**
+## Syscalls and Their Solidity Equivalent
 
 The following list includes all currently available Starknet syscalls and their closest equivalents in Solidity where applicable.
 
-- **`storage_read_syscall`** and **`storage_write_syscall`** are equivalent to `sload` and `sstore` in Solidity assembly respectively.
-- **`get_block_hash_syscall`** is ****equivalent to ****`blockhash()`, returns the hash of a given block.
-- **`call_contract_syscall`** is comparable to `address.call()` for contract calls.
-- **`deploy_syscall`** is similar to `create2` for deploying contracts at a predictable address.
-- **`emit_event_syscall`** is similar to `event` + `emit`. Both log data for off-chain indexing.
-- **`keccak_syscall`** is equivalent to `keccak256`.
-- **`get_class_hash_at_syscall`** is similar to `address.codehash`, which returns the hash of a contract’s bytecode.
-- **`library_call_syscall`** is similar to `delegatecall`, which executes code from another contract in the current contract’s execution context.
-- **`replace_class_syscall`** , **`get_execution_info_syscall`, `get_execution_info_v2_syscall`,`send_message_to_l1_syscall`, `sha256_process_block_syscall`** and **`meta_tx_v0_syscall`** do not have direct Solidity equivalent.
+- `storage_read_syscall` and `storage_write_syscall` are equivalent to **sload** and **sstore** in Solidity assembly respectively.
+- `get_block_hash_syscall` is equivalent to **blockhash()**, returns the hash of a given block.
+- `call_contract_syscall` is comparable to **address.call()** for contract calls.
+- `deploy_syscall` is similar to **create2** for deploying contracts at a predictable address.
+- `emit_event_syscall` is similar to **event** + **emit**. Both log data for off-chain indexing.
+- `keccak_syscall` is equivalent to **keccak256**.
+- `get_class_hash_at_syscall` is similar to **address.codehash**, which returns the hash of a contract’s bytecode.
+- `library_call_syscall` is similar to **delegatecall**, which executes code from another contract in the current contract’s execution context.
+- `replace_class_syscall` , `get_execution_info_syscall`, `get_execution_info_v2_syscall`,`send_message_to_l1_syscall`, `sha256_process_block_syscall` and `meta_tx_v0_syscall` do not have direct Solidity equivalent.
 
 Now let’s see how the above syscalls are used in practice.
 
-## **Syscalls to read and write to storage**
+## Syscalls to read and write to storage
 
 Unlike Cairo’s `.read()` and `.write()` methods, which can only read and write storage variables declared in the `Storage` struct, `storage_read_syscall` and `storage_write_syscall` read from and write to raw storage slots directly. They do not require a declared storage variable. If you know a slot’s storage address, you can read from it or write to it directly.
 
@@ -366,7 +366,7 @@ mod HelloStarknet {
 
 In this example, before reading from and writing to storage address (slot) `1`, we converted the value `1` from `felt252` to `StorageBaseAddress` type, and then to `StorageAddress`, which is the required type for storage addresses in both syscalls.
 
-## **Cross-contract call syscall**
+## Cross-contract call syscall
 
 The `call_contract_syscall`  is used to perform low-level cross-contract calls, similar to `address.call()` in Solidity. Its function signature is:
 
@@ -438,7 +438,7 @@ In the `call_something` function, the `selector!` macro hashes the function name
 **What Happens If the Call Fails?**
 Unlike Solidity's `address.call()`, which returns a boolean indicating success or failure and allows the caller to handle it gracefully, `call_contract_syscall` does not give you that option. If the invoked contract reverts for any reason, the failure propagates immediately and the entire transaction reverts, there is no way to catch or recover from it on-chain. This is an important distinction to keep in mind when designing contracts that rely on cross-contract calls.
 
-## **Deploying a New Contract**
+## Deploying a New Contract
 
 The `deploy_syscall` is Cairo’s low-level way of creating contracts, similar to Solidity’s `create2`. It deploys contract at a predictable address.
 
@@ -503,7 +503,7 @@ mod HelloStarknet {
 
 The `deploy_counter` function serializes the constructor argument into a `Span<felt252>`, then calls `deploy_syscall` with the class hash, salt, and constructor calldata.
 
-## Syscalls for emitting e**vents**
+## Syscalls for emitting events
 
 The `emit_event_syscall` is the low-level primitive for logging events on Starknet. It serves the same purpose as `logN()` in low-level Solidity, where N is the number of topics. But unlike the EVM where the log opcode support a maximum of 4 indexed topics, Starknet supports up to 50 keys (topics).
 
@@ -522,7 +522,7 @@ It takes two arguments:
 
 `emit_event_syscall` returns `SyscallResult<()>`: on success the value is `()`, and on failure it returns an error without halting execution, allowing the failure to be handled gracefully.
 
-Consider this Solidity contract that logs an event with 2 topics. Don’t worry too much about what the code is doing just jump to the `**FOCUS HERE**` comment:
+Consider this Solidity contract that logs an event with 2 topics. Don’t worry too much about what the code is doing just jump to the `FOCUS HERE` comment:
 
 ```solidity
 // SPDX-License-Identifier: MIT
@@ -537,7 +537,7 @@ contract Hello {
             // Write the non-indexed data (amount = 4) to memory ptr 0x00
             mstore(0x00, 4)
 
-						//  ****   FOCUS HERE    *****
+						//  ****   FOCUS HERE    ****
 						//			_____data_____   _____keys_____
 						//		 |              | |              |
             // log2(memPtr, memSize, topic0, topic1)
@@ -600,7 +600,7 @@ mod HelloStarknet {
 
 Notice how `emit_event_syscall` explicitly separates keys and data as two `Span<felt252>` parameters, similar to how `log2` takes memory pointer and size for data and separate parameters for topics.
 
-## **Getting Block Hash**
+## Getting Block Hash
 
 In Solidity, getting a block hash is straightforward with the builtin `blockhash(blockNumber)` (only works for the 256 most recent blocks). Cairo exposes similar capability through the `get_block_hash_syscall`, but with different availability constraints.
 
@@ -647,7 +647,7 @@ mod HelloStarknet {
 }
 ```
 
-## **Getting Execution Context**
+## Getting Execution Context
 
 In Solidity, values such as `block.timestamp`, `msg.sender`, `tx.origin` and so on are available as **built-in globals**.
 
@@ -698,9 +698,9 @@ mod HelloStarknet {
 
 The `context_info` function calls `get_execution_info_syscall()` to retrieve the execution context. It accesses `caller_address` directly from the returned struct (`info.caller_address`) and `block_timestamp` from the nested `block_info` field (`info.block_info.block_timestamp`).
 
-Note**:** This example extracts but doesn't return or use the values for simplicity. In a real contract, you would typically return these values or use them for access control, timing logic, or other logic.
+Note: This example extracts but doesn't return or use the values for simplicity. In a real contract, you would typically return these values or use them for access control, timing logic, or other logic.
 
-## **Getting Execution Context v2**
+## Getting Execution Context v2
 
 This is similar to Getting Execution Context, except that the `TxInfo` field is replaced with `v2::TxInfo`, which includes both the original transaction fields and additional fields introduced in newer transaction versions.
 
@@ -751,7 +751,7 @@ mod HelloStarknet {
 
 ## Get Class Hash - `get_class_hash_at_syscall`
 
-In Starknet, every deployed contract is associated with a *class hash***,** a unique identifier that represents its compiled contract class (analogous to the bytecode hash in the EVM).
+In Starknet, every deployed contract is associated with a *class hash*, a unique identifier that represents its compiled contract class (analogous to the bytecode hash in the EVM).
 
 The `get_class_hash_at_syscall` is used to retrieve the class hash of any contract given its address. This is similar to `address.codehash` in Solidity, which returns the bytecode hash at an address.
 
@@ -812,9 +812,9 @@ fn library_call_syscall(
 
 It takes the following arguments:
 
-- `class_hash`**:** the hash of the class (contract code hash) containing the function to call. It is of type `ClassHash`.
-- `function_selector`**:** the selector of the function to execute. Type `felt252`.
-- `calldata`**:** the array of arguments to pass to that function. Type `Span<felt252>`.
+- `class_hash`: the hash of the class (contract code hash) containing the function to call. It is of type `ClassHash`.
+- `function_selector`: the selector of the function to execute. Type `felt252`.
+- `calldata`: the array of arguments to pass to that function. Type `Span<felt252>`.
 
 It returns the called function's return data as a `Span<felt252>`, wrapped in a `SyscallResult` to handle potential errors.
 
@@ -857,7 +857,7 @@ mod HelloStarknet {
 
 Just like `call_contract_syscall`, if the `library_call_syscall` fails (for example, if the target function reverts or the class hash is invalid), the entire transaction will revert.
 
-**`library_call_syscall` Storage Layout**
+`library_call_syscall` **Storage Layout**
 
 Just like `delegatecall` in Solidity, `library_call_syscall` in Cairo executes a function in the target contract in the storage context of the calling contract. The difference is how those storage locations are addressed.
 
