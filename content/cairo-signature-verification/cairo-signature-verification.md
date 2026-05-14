@@ -28,7 +28,7 @@ On Starknet today, the most common signature schemes are:
 
 Starknet’s native signature scheme uses ECDSA over the Stark-friendly elliptic curve (the “Stark curve”). Signatures are verified against the hash of the message and the signer's public key using Cairo's built-in ECDSA functions.
 
-### **How a signature is verified using** Stark curve ECDSA
+### How a signature is verified using Stark curve ECDSA
 
 Cairo's core library provides a built-in function, `check_ecdsa_signature`, for verifying Stark curve signatures. It takes four arguments: the message hash, the signer's public key, and the signature values `r` and `s`, then return whether the signature is valid:
 
@@ -52,7 +52,7 @@ After all checks are in place, the `check_ecdsa_signature` function is invoked t
 
 Wallet providers (e.g., Ready, Braavos) commonly rely on this scheme to confirm that a transaction was authorized by the correct account before allowing it to be executed on-chain.
 
-### **Putting the Stark curve signature verification into practice: a token airdrop example**
+### Putting the Stark curve signature verification into practice: a token airdrop example
 
 To make this more concrete, consider a simple token airdrop example which shows how Stark-curve ECDSA verification is used in practice to confirm that a user is eligible to receive tokens.
 
@@ -208,7 +208,7 @@ Here, we import two things from `starknet.js`:
 
 We also load environment variables using `dotenv`, which keeps private info out of the source code.
 
-**Reading inputs from environment variables and validating** **them:**
+**Reading inputs from environment variables and validating them:**
 
 In this part of the code, we are reading the private key (`AIRDROP_SIGNER_PK`) and the user’s address (`RECIPIENT`), then validating that they exist, else, throw an error.
 
@@ -415,7 +415,7 @@ The airdrop contract requires two interfaces: one to interact with the ERC-20 co
 
 **Importing Relevant Dependencies**
 
-Most of the dependencies here should already look familiar from earlier articles. The only imports we haven’t talked about yet are the ones below the comment `**NEWLY ADDED IMPORTS**`:
+Most of the dependencies here should already look familiar from earlier articles. The only imports we haven’t talked about yet are the ones below the comment `NEWLY ADDED IMPORTS`:
 
 ```rust
 use core::poseidon::poseidon_hash_span;
@@ -425,7 +425,7 @@ use starknet::storage::{
 use starknet::{ContractAddress, get_caller_address};
 use super::{IERC20Dispatcher, IERC20DispatcherTrait};
 
-// *** NEWLY ADDED IMPORTS ***** //**
+// *** NEWLY ADDED IMPORTS *** //
 use core::ecdsa::check_ecdsa_signature;
 use core::ec::stark_curve::ORDER;
 ```
@@ -725,17 +725,17 @@ Now that we have successfully verified a Stark-curve signature and completed a c
 
 ## Secp256k1 ECDSA (Ethereum-style signatures)
 
-`secp256k1` is the elliptic curve used by Ethereum's ECDSA signature scheme. **In practice, an Ethereum wallet proves “I control this address” by signing a message or transaction with its private key. The verifier can recover the signer’s Ethereum address from the signature and the message or transaction hash, then check that it matches the expected address.
+`secp256k1` is the elliptic curve used by Ethereum's ECDSA signature scheme. In practice, an Ethereum wallet proves “I control this address” by signing a message or transaction with its private key. The verifier can recover the signer’s Ethereum address from the signature and the message or transaction hash, then check that it matches the expected address.
 
 This is where the flow differs from the Stark-curve scheme discussed earlier. With the `check_ecdsa_signature` function we discussed earlier, the public key is passed in as an input and the function returns an explicit boolean result. With Ethereum-style signatures, `ecrecover` only recovers an address, there is no verification until the recovered address is explicitly compared against the expected signer.
 
 On Starknet, Cairo’s core library provides helper functions to verify Ethereum signatures, namely, [`verify_eth_signature`](https://github.com/starkware-libs/cairo/blob/b5c6d867f2378e17922bee242cbf0e81752821ab/corelib/src/starknet/eth_signature.cairo#L51) and [`is_eth_signature_valid`](https://github.com/starkware-libs/cairo/blob/b5c6d867f2378e17922bee242cbf0e81752821ab/corelib/src/starknet/eth_signature.cairo#L90). These functions are used in Starknet contracts to verify an Ethereum signature against a message hash and an expected Ethereum address. The main difference between them is that `verify_eth_signature` asserts and panics on invalid input, while `is_eth_signature_valid` returns a `Result`, which allows for graceful handling of errors.
 
-Additionally, both functions have the signature malleability fix built in, they enforce **`s <= N/2` (alongside `s != 0` as a sanity check) via [`is_signature_s_valid`](https://github.com/starkware-libs/cairo/blob/b5c6d867f2378e17922bee242cbf0e81752821ab/corelib/src/starknet/secp256_trait.cairo#L251-L257) under the hood, meaning you do not need to add that check yourself.
+Additionally, both functions have the signature malleability fix built in, they enforce `s <= N/2` (alongside `s != 0` as a sanity check) via [`is_signature_s_valid`](https://github.com/starkware-libs/cairo/blob/b5c6d867f2378e17922bee242cbf0e81752821ab/corelib/src/starknet/secp256_trait.cairo#L251-L257) under the hood, meaning you do not need to add that check yourself.
 
 To demonstrate how Ethereum signature verification works inside a Starknet contract, we can reuse the same airdrop-based example idea from the Stark-curve ECDSA section.
 
-### **Token airdrop example**
+### Token airdrop example
 
 Suppose the project wants to distribute tokens on Starknet to users who are eligible based on their Ethereum addresses. To ensure that only the rightful owner of an eligible Ethereum address can claim, the signed message should include all the values that define the claim, such as:
 
