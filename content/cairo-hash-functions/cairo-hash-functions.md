@@ -32,7 +32,7 @@ Cairo therefore provides three hash functions, each for a different context:
 > Note: If you need to interact with legacy contracts, use “Pedersen”. If you are free to choose the best option for efficiency, you use “Poseidon”. If you need Ethereum compatibility, use “Keccak”.
 >
 
-## **How to Use Hash Functions in Cairo**
+## How to Use Hash Functions in Cairo
 
 Now that we understand what these hash functions are and what their purpose is, let’s look at how to use them in practice. Cairo provides these hash functions in its core library. For functions like Pedersen and Poseidon, their preimage (*the input value to be hashed*) type must implement a trait called `Hash`.
 
@@ -172,7 +172,7 @@ PedersenTrait::new(<*base_value*>)   // base
 
 From a usage perspective, the only visible difference between the two is the extra argument passed to `PedersenTrait::new`, called the **base**.
 
-### **What the Pedersen “base” actually is**
+### What the Pedersen “base” actually is
 
 The Pedersen *base* is simply an **initial value** of type `felt252`.
 
@@ -215,7 +215,7 @@ let approval_hash = PedersenTrait::new(1)
 // claim_hash != approval_hash, even though inputs are identical
 ```
 
-### **Poseidon: The Base Is Already Baked In**
+### Poseidon: The Base Is Already Baked In
 
 Poseidon on the other hand does not need an explicit base value because it already has an internal fixed state. When `PoseidonTrait::new()` is called, it starts from that predefined state.
 
@@ -239,7 +239,7 @@ hash = poseidon(state1, b)
 
 Let’s look at some examples of how to use Poseidon and Pedersen in a contract.
 
-### **Example 1: Hashing Two Field Elements With `.update`**
+### Example 1: Hashing Two Field Elements With `.update`
 
 The code example below, demonstrates how to hash two `felt252` values using **Poseidon**:
 
@@ -278,7 +278,7 @@ mod HelloStarknet {
 }
 ```
 
-Same idea for **Pedersen**; ****the only difference is that you pass a **base** when creating the state.  `0` is a common choice and will be used throughout this article:
+Same idea for **Pedersen**; the only difference is that you pass a **base** when creating the state.  `0` is a common choice and will be used throughout this article:
 
 ```rust
 #[starknet::interface]
@@ -316,13 +316,13 @@ mod HelloStarknet {
 }
 ```
 
-### **Example 2: Hashing with `.update_with`**
+### Example 2: Hashing with `.update_with`
 
 So far, we have only hashed `felt252` values using `.update`. But in practice, we will often want to hash values of other types.
 
 That is what `.update_with` is for. It comes from `HashStateExTrait` and is used to hash any type that implements (or derives) `Hash` trait.
 
-#### **Hashing a ContractAddress using Poseidon**
+#### Hashing a ContractAddress using Poseidon
 
 In the code below, we hash two `ContractAddress` values, `a` and `b`. Since `ContractAddress` implements the `Hash` trait, we can pass them directly into the hasher state using `.update_with()`.
 
@@ -370,7 +370,7 @@ mod HelloStarknet {
 }
 ```
 
-#### **Hashing a ContractAddress using Pedersen**
+#### Hashing a ContractAddress using Pedersen
 
 This contract below hashes two addresses using Pedersen hash function:
 
@@ -418,7 +418,7 @@ mod HelloStarknet {
 }
 ```
 
-#### **Hashing a struct using Poseidon**
+#### Hashing a struct using Poseidon
 
 In the code below, since `MyStruct` is used as a parameter in the interface, we define it outside the contract module so both the interface and the contract implementation can access it.
 Any struct that appears in a `#[starknet::interface]` must:
@@ -464,7 +464,7 @@ mod HelloStarknet {
 }
 ```
 
-#### **Hashing a struct using Pedersen**
+#### Hashing a struct using Pedersen
 
 This works the same with Pedersen, just replace the import with Pedersen hash function and the state with `PedersenTrait::new(0)` and keep the rest unchanged:
 
@@ -553,7 +553,7 @@ mod HelloStarknet {
 
 ```
 
-### **Example 3: Hashing Arrays**
+### Example 3: Hashing Arrays
 
 We can not directly hash an array like we did with other types, because an array itself doesn’t implement the `Hash` trait. To hash an array you must **loop through each element**, update the hash state as we go, and then call `.finalize()` at the end.
 
@@ -642,7 +642,7 @@ If we pass the same array to both `hash_array_manual_poseidon` and `hash_array_b
 
 #### Hash an `Array<felt252>` using Pedersen:
 
-The steps for hashing an array of felts with Pedersen are similar to those for Poseidon: you manually loop through the array and hash each element sequentially. However, there's a convention in Starknet when hashing arrays with Pedersen “**the array length must be included as the final element**. The pattern is followed consistently across the Starknet ecosystem, including the [protocol implementation](https://github.com/xJonathanLEI/starknet-rs/blob/master/starknet-core/src/crypto.rs#L66C8-L66C32) and standard libraries like [starknet.js](https://github.com/starknet-io/starknet.js/blob/develop/src/utils/hash/classHash/pedersen.ts#L33).
+The steps for hashing an array of felts with Pedersen are similar to those for Poseidon: you manually loop through the array and hash each element sequentially. However, there's a convention in Starknet when hashing arrays with Pedersen **the array length must be included as the final element**. The pattern is followed consistently across the Starknet ecosystem, including the [protocol implementation](https://github.com/xJonathanLEI/starknet-rs/blob/master/starknet-core/src/crypto.rs#L66C8-L66C32) and standard libraries like [starknet.js](https://github.com/starknet-io/starknet.js/blob/develop/src/utils/hash/classHash/pedersen.ts#L33).
 
 The `hash_array_manual_pedersen` function below shows this pattern in action. After hashing all the array elements, we hash the array length as the final element before finalizing the hash state:
 
@@ -705,7 +705,7 @@ All of these return a `u256` that represents the same 32-byte digest produced by
 
 For example, suppose Solidity’s keccak hash of a value produced `0x1234...5678`. Cairo’s keccak would represent that same digest as a little-endian `u256`, so its byte order would be reversed: `0x7856...3412`. We will see how to get matching results between Cairo and Solidity’s keccak in the last section.
 
-### **Cairo’s Keccak Functions With Their Solidity Equivalents**
+### Cairo’s Keccak Functions With Their Solidity Equivalents
 
 - `compute_keccak_byte_array` → Hashes a `ByteArray`.
 
@@ -957,7 +957,7 @@ fn u256_reverse_bytes(x: u256) -> u256 {
 }
 ```
 
-Since a `u256` in Cairo is composed of two `u128` values (`low` and `high`), reversing the byte order of the **256-bit integer requires:
+Since a `u256` in Cairo is composed of two `u128` values (`low` and `high`), reversing the byte order of the 256-bit integer requires:
 
 1. Reversing the byte order within each 128-bit half.
 2. Swapping the two halves.
